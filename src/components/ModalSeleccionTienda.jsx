@@ -1,5 +1,5 @@
-import React from "react";
-import { Modal, Select, message } from "antd";
+import React, { useState, useEffect } from "react";
+import { Modal, Select } from "antd";
 
 /**
  * Modal para seleccionar tienda y mostrador
@@ -19,16 +19,23 @@ const ModalSeleccionTienda = ({
   onSeleccion,
   onClose
 }) => {
-  const handleOk = () => {
-    if (!tiendaSeleccionada || !mostradorSeleccionado) {
-      message.warning("Selecciona tienda y mostrador");
-      return;
+  const [tienda, setTienda] = useState(null);
+  const [mostrador, setMostrador] = useState(null);
+
+  useEffect(() => {
+    if (open) {
+      setTienda(tiendaSeleccionada || null);
+      setMostrador(mostradorSeleccionado || null);
     }
-    onSeleccion(tiendaSeleccionada, mostradorSeleccionado);
+  }, [open, tiendaSeleccionada, mostradorSeleccionado]);
+
+  const handleOk = () => {
+    if (!tienda || !mostrador) return;
+    onSeleccion(tienda, mostrador);
     onClose();
   };
 
-  const tiendaActual = tiendas.find(t => t.id === tiendaSeleccionada);
+  const tiendaActual = tiendas.find(t => t.id === tienda);
 
   return (
     <Modal
@@ -36,14 +43,18 @@ const ModalSeleccionTienda = ({
       title="Selecciona la Tienda y Mostrador"
       onCancel={onClose}
       onOk={handleOk}
+      okButtonProps={{ disabled: !tienda }}
     >
       <div style={{ marginBottom: 12 }}>
         <label>Tienda:</label>
         <Select
           style={{ width: "100%" }}
           placeholder="Selecciona una tienda"
-          value={tiendaSeleccionada}
-          onChange={(val) => onSeleccion(val, null)}
+          value={tienda}
+          onChange={(val) => {
+            setTienda(val);
+            setMostrador(null);
+          }}
         >
           {tiendas.map(tienda => (
             <Select.Option key={tienda.id} value={tienda.id}>
@@ -53,17 +64,18 @@ const ModalSeleccionTienda = ({
         </Select>
       </div>
       <div>
-        <label>Mostrador:</label>
+        <label>Mostrador</label>
         <Select
           style={{ width: "100%" }}
-          placeholder="Selecciona un mostrador"
-          value={mostradorSeleccionado}
-          onChange={(val) => onSeleccion(tiendaSeleccionada, val)}
+          placeholder="Selecciona un mostrador (opcional)"
+          value={mostrador}
+          onChange={(val) => setMostrador(val)}
           disabled={!tiendaActual}
+          allowClear
         >
           {tiendaActual?.cajas?.map(caja => (
             <Select.Option key={caja.id} value={caja.id}>
-              {caja.descripcion || caja.numeroDeCaja}
+              {caja.descripcion || `Caja ${caja.numeroDeCaja}`}
             </Select.Option>
           ))}
         </Select>
