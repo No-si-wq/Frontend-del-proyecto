@@ -38,7 +38,7 @@ const Compras = () => {
   const [tiendasDisponibles, setTiendasDisponibles] = useState([]);
   const [tiendaSeleccionada, setTiendaSeleccionada] = useState(null);
   const [mostradorSeleccionado, setMostradorSeleccionado] = useState(null);
-  const compraHabilitada = Boolean(tiendaSeleccionada && mostradorSeleccionado);
+  const compraHabilitada = Boolean(tiendaSeleccionada);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   const [modalPanelConfirmar, setModalPanelConfirmar] = useState(false);
@@ -194,7 +194,7 @@ const Compras = () => {
     const payload = {
       supplierId: proveedorSeleccionado,
       storeId: tiendaSeleccionada,
-      cajaId: mostradorSeleccionado,
+      ...(mostradorSeleccionado ? { cajaId: mostradorSeleccionado } : {}),
       productos: carrito.map(({ id, cantidad, price }) => ({
         productoId: id,
         cantidad,
@@ -262,7 +262,7 @@ const Compras = () => {
 
           {!compraHabilitada && (
             <div style={{ background: "#fff3cd", padding: 16, margin: "16px 0", border: "1px solid #ffeeba", borderRadius: 6 }}>
-              <Text strong>Debes seleccionar una tienda y un mostrador para comenzar.</Text>
+              <Text strong>Debes seleccionar una tienda para comenzar.</Text>
             </div>
           )}
 
@@ -343,7 +343,7 @@ const Compras = () => {
         mostradorSeleccionado={mostradorSeleccionado}
         onSeleccion={(tiendaId, cajaId) => {
           setTiendaSeleccionada(tiendaId);
-          setMostradorSeleccionado(cajaId);
+          setMostradorSeleccionado(cajaId ?? null);
         }}
         onClose={() => setModalSeleccionTienda(false)}
       />
