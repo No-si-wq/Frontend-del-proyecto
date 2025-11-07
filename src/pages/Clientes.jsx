@@ -321,10 +321,10 @@ const Clientes = () => {
             <Input type="number" />
           </Form.Item>
           <Form.Item name="creditBalance" label="Saldo de Crédito">
-            <Input type="number" />
+            <Input type="number" disabled />
           </Form.Item>
           <Form.Item name="creditDays" label="Días de Crédito">
-            <Input type="number" />
+            <Input type="number" disabled={editMode} />
           </Form.Item>
         </Form>
       </Modal>
