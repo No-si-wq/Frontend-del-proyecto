@@ -30,17 +30,17 @@ const FacturasCompras = () => {
     fetchCompras();
   }, []);
 
-  // Cancelar compra seleccionada
-  const cancelarCompra = async () => {
-    if (!selectedCompra || selectedCompra.estado === "CANCELADA") return;
+  const cancelarCompra = async () => { 
+    if (!selectedCompra || selectedCompra.estado !== "EMITIDA") return;
+
     try {
-      const res = await apiClient.patch(`/api/compras/${selectedCompra.id}/cancel`, { method: "PATCH" });
-      if (!res.ok) throw new Error("Error al cancelar la compra");
+      await apiClient.patch(`/api/compras/${selectedCompra.id}/cancel`);
       message.success("Compra cancelada");
       setSelectedCompra(null);
       fetchCompras();
     } catch (e) {
-      message.error("No se pudo cancelar la compra", e.message);
+      console.error("Error al cancelar la compra:", e);
+      message.error("No se pudo cancelar la compra");
     }
   };
 
@@ -50,6 +50,11 @@ const FacturasCompras = () => {
       dataIndex: "folio",
       key: "folio",
       render: (f) => <Tag color="blue">{f}</Tag>,
+    },
+    {
+      title: "Caja",
+      dataIndex: "caja",
+      key: "caja",
     },
     {
       title: "Fecha",
@@ -73,10 +78,13 @@ const FacturasCompras = () => {
       title: "Estado",
       dataIndex: "estado",
       key: "estado",
-      render: (estado) =>
-        <Tag color={estado === "CANCELADA" ? "red" : "green"}>
-          {estado}
-        </Tag>,
+      render: (estado) => {
+        let color = "green";
+        if (estado === "CANCELADA") color = "red";
+        else if (estado === "PENDIENTE") color = "blue";
+
+        return <Tag color={color}>{estado}</Tag>;
+      },
     },
   ];
 
@@ -109,7 +117,7 @@ const FacturasCompras = () => {
         type="primary"
         icon={<EditOutlined />}
         onClick={() => navigate(`/compras?id=${selectedCompra.id}`)}
-        disabled={!selectedCompra || selectedCompra.estado === "CANCELADA"}
+        disabled={!selectedCompra || selectedCompra.estado !== "PENDIENTE"}
       >
         Editar
       </Button>
@@ -118,12 +126,12 @@ const FacturasCompras = () => {
         onConfirm={cancelarCompra}
         okText="Sí, cancelar"
         cancelText="No"
-        disabled={!selectedCompra || selectedCompra.estado === "CANCELADA"}
+        disabled={!selectedCompra || selectedCompra.estado !== "EMITIDA"}
       >
         <Button
           danger
           icon={<StopOutlined />}
-          disabled={!selectedCompra || selectedCompra.estado === "CANCELADA"}
+          disabled={!selectedCompra || selectedCompra.estado !== "EMITIDA"}
         >
           Cancelar
         </Button>

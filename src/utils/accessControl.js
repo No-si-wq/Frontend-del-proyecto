@@ -17,7 +17,13 @@ const accessControl = {
     '/impuestos',
     '/cajas',
     '/inventarioConsulta',
-    '/reportes'
+    '/reportes',
+    '/utilidad',
+    '/kardex',
+    '/pagos-cliente',
+    '/backup',
+    '/restore',
+    '/schedule',
   ],
   facturacion: [
     '/ventas',
@@ -26,14 +32,17 @@ const accessControl = {
     '/compras',
     '/compras/facturas',
     '/proveedores',
-    '/ventas/panel'
+    '/ventas/panel',
+    '/pagos-cliente',
   ],
   contabilidad: [
     '/formas-pago',
     '/monedas',
     '/inventarioConsulta',
     '/impuestos',
-    '/reportes'
+    '/reportes',
+    '/utilidad',
+    '/kardex'
   ],
   ventas: [
     '/ventas/panel',
@@ -41,6 +50,7 @@ const accessControl = {
     '/clientes', 
     '/categorias',
     '/inventarioConsulta',   
+    '/pagos-cliente',
   ],
 };
 export default accessControl;

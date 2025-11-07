@@ -1,6 +1,6 @@
 import React from 'react';
 import '@ant-design/v5-patch-for-react-19';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Home from './pages/Home';
@@ -21,17 +21,20 @@ import CurrencyPage from './pages/CurrencyPage';
 import TaxesPage from './pages/TaxesPage';
 import TiendasUI from './pages/TiendasUI';
 import Cajas from './pages/Cajas';
-import RegisterCompany from './pages/RegisterCompany'
+import UtilidadProducto from './pages/ReportesProducto';
+import KardexProductos from './pages/Kardex';
+import PagosClientes from './pages/pagosClientes';
+import BackupButton from './pages/BackupButton';
+import RestoreButton from './pages/RestoreButton';
+import ScheduleBackup from './pages/scheduleButton';
 
 function App() {
 
   return (
     <AuthProvider>
-      <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/register-company" element={<RegisterCompany />} />
           <Route path="/ventas" element={<PrivateRoute><Ventas /></PrivateRoute>} />
           <Route path="/compras" element={<PrivateRoute><Compras /></PrivateRoute>} />
           <Route path="/inventarioConsulta" element={<PrivateRoute><InventarioConsulta /></PrivateRoute>} />
@@ -47,6 +50,12 @@ function App() {
           <Route path='/impuestos' element={<PrivateRoute><TaxesPage/></PrivateRoute>} />
           <Route path='/tiendas' element={<PrivateRoute><TiendasUI/></PrivateRoute>} />
           <Route path='/cajas' element={<PrivateRoute><Cajas/></PrivateRoute>} />
+          <Route path='/utilidad' element={<PrivateRoute><UtilidadProducto/></PrivateRoute>} />
+          <Route path='/kardex' element={<PrivateRoute><KardexProductos/></PrivateRoute>} />
+          <Route path='/pagos-cliente' element={<PrivateRoute><PagosClientes/></PrivateRoute>} />
+          <Route path='/backup' element={<PrivateRoute><BackupButton/></PrivateRoute>} />
+          <Route path='/restore' element={<PrivateRoute><RestoreButton/></PrivateRoute>} />
+          <Route path='/schedule' element={<PrivateRoute><ScheduleBackup/></PrivateRoute>} />
           {/* Default route */}
           <Route 
             path="/home" 
@@ -58,7 +67,6 @@ function App() {
           />
           <Route path="/" element={<Navigate to="/home" />} />
         </Routes>
-      </Router>
     </AuthProvider>
   );
 }

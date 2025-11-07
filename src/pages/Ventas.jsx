@@ -3,7 +3,7 @@ import {
   Layout, Menu, Button, Typography, message, Modal
 } from "antd";
 import {
-  PlusOutlined, ReloadOutlined, SaveOutlined, UserAddOutlined, ShoppingCartOutlined, DollarOutlined
+  PlusOutlined, ReloadOutlined, SaveOutlined, UserAddOutlined, ShoppingCartOutlined, DollarOutlined, PauseCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -25,6 +25,12 @@ const Ventas = () => {
   const [searchParams] = useSearchParams();
   const idVenta = searchParams.get("id");
   const modoVista = searchParams.get("view") === "true";
+  const [creditoCliente, setCreditoCliente] = useState({
+    creditLimit: 0,
+    creditBalance: 0,
+    creditDays: 0,
+    creditAvailable: 0
+  });
 
   const [clientes, setClientes] = useState([]);
   const [productos, setProductos] = useState([]);
@@ -32,7 +38,6 @@ const Ventas = () => {
   const [modalCliente, setModalCliente] = useState(false);
   const [clienteLoading, setClienteLoading] = useState(false);
 
-  const [folio, setFolio] = useState("");
   const [metodosPago, setMetodosPago] = useState([]);
   const [modalSeleccionTienda, setModalSeleccionTienda] = useState(false);
   const [tiendasDisponibles, setTiendasDisponibles] = useState([]);
@@ -40,6 +45,8 @@ const Ventas = () => {
   const [mostradorSeleccionado, setMostradorSeleccionado] = useState(null);
   const ventaHabilitada = Boolean(tiendaSeleccionada && mostradorSeleccionado);
   const [productoSeleccionado, setProductoSeleccionado] = useState(null); 
+  const [folioEstimado, setFolioEstimado] = useState("");
+  const [folioReal, setFolioReal] = useState("");
   const esEdicion = Boolean(idVenta);
 
   const [modalPanelPago, setModalPanelPago] = useState(false);
@@ -49,6 +56,8 @@ const Ventas = () => {
   const [valorIngreso, setValorIngreso] = useState(0);
   const [loading, setLoading] = useState(false);
   const [monedas, setMonedas] = useState([]);
+  const folioAMostrar = esEdicion ? folioReal : folioEstimado;
+  const modo = "venta";
 
   const {
     carrito,
@@ -59,62 +68,7 @@ const Ventas = () => {
     subtotal,
     impuestos,
     total
-  } = useCarrito(productos);
-
-  useEffect(() => {
-    if (esEdicion) {
-      apiClient.get(`/api/ventas/${idVenta}`)
-        .then(({ data }) => {
-          setFolio(data.folio);
-          setClienteSeleccionado(data.clienteId ?? null);
-          setTiendaSeleccionada(data.storeId ?? null);
-          setMostradorSeleccionado(data.cajaId ?? null);
-          setPagosRecibidos(data.formasPago ?? []);
-
-          const productosVenta = data.productos.map(p => ({
-            id: p.productoId,
-            name: p.producto ?? "Producto eliminado",
-            description: "",
-            price: p.price,
-            cantidad: p.cantidad,
-            total: p.price * p.cantidad,
-            tax: { percent: 0 }
-          }));
-
-          setCarrito(productosVenta);
-          message.success("Venta cargada correctamente");
-        })
-        .catch(err => {
-          console.error("Error al cargar venta:", err);
-          message.error("No se pudo cargar la venta para edición");
-        });
-    }
-  }, [esEdicion, idVenta]);
-
-    const fetchFolio = async () => {
-      try {
-      const res = await apiClient.get('/api/ventas/next-folio');
-      setFolio(res.data.folio);
-      } catch {
-        setFolio("ERROR");
-      }
-    };
-
-  const fetchCurrencies = async () => {
-    try {
-      const res = await apiClient.get('/api/currencies');
-        setMonedas(res.data.data);  
-      } catch (error) {
-        message.error("Error al cargar las monedas");
-        console.error(error);
-      }
-    };
-
-  useEffect(() => {
-  if (modalRecibido) {
-    fetchCurrencies();
-  }
-}, [modalRecibido]);
+  } = useCarrito(productos, modo);
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -135,10 +89,84 @@ const Ventas = () => {
     };
     fetchClientes();
     fetchMetodosPago();
-    if (!esEdicion) {
-      fetchFolio();
-    }
   }, []);
+
+  useEffect(() => {
+    if (!clienteSeleccionado) return;
+    const cliente = clientes.find(c => c.id === clienteSeleccionado);
+    if (cliente) {
+      const creditLimit = Number(cliente.creditLimit) || 0;
+      const creditBalance = Number(cliente.creditBalance) || 0;
+      const creditDays = Number(cliente.creditDays) || 0;
+      const creditAvailable = creditLimit - creditBalance;
+
+      setCreditoCliente({
+        creditLimit,
+        creditBalance,
+        creditDays,
+        creditAvailable,
+        updatedAt: cliente.updatedAt,
+        creditType: cliente.creditType || "NORMAL",
+      });
+    }
+  }, [clienteSeleccionado, clientes]);
+
+  useEffect(() => {
+    if (esEdicion) {
+      apiClient.get(`/api/ventas/${idVenta}`)
+        .then(({ data }) => {
+          setFolioReal(data.folio);
+          setClienteSeleccionado(data.clientId ?? null);
+          setTiendaSeleccionada(data.storeId ?? null);
+          setMostradorSeleccionado(data.cajaId ?? null);
+          setPagosRecibidos(data.formasPago ?? []);
+
+          const productosVenta = data.productos.map(p => ({
+            id: p.productoId,
+            name: p.producto ?? "Producto eliminado",
+            priceBase: p.priceBase,
+            priceFinal: p.priceFinal,
+            cantidad: p.cantidad,
+            totalBase: p.priceBase * p.cantidad,
+            totalFinal: p.priceFinal * p.cantidad
+          }));
+
+          setCarrito(productosVenta);
+          message.success("Venta cargada correctamente");
+        })
+        .catch(err => {
+          console.error("Error al cargar venta:", err);
+          message.error("No se pudo cargar la venta para edición");
+        });
+    }
+  }, [esEdicion, idVenta]);
+
+  const fetchFolioEstimado = async (cajaId) => {
+    if (!cajaId) return;
+    try {
+      const res = await apiClient.get(`/api/ventas/next-folio-estimado/${cajaId}`);
+      setFolioEstimado(res.data.folio);
+    } catch (err) {
+      console.error(err);
+      setFolioEstimado("ERROR");
+    }
+  };
+
+  const fetchCurrencies = async () => {
+    try {
+      const res = await apiClient.get('/api/currencies');
+        setMonedas(res.data.data);  
+      } catch (error) {
+        message.error("Error al cargar las monedas");
+        console.error(error);
+      }
+    };
+
+  useEffect(() => {
+  if (modalRecibido) {
+    fetchCurrencies();
+  }
+}, [modalRecibido]);
 
   useEffect(() => {
     const fetchTiendas = async () => {
@@ -166,42 +194,138 @@ const Ventas = () => {
     if (tiendaSeleccionada) fetchProductos();
   }, [tiendaSeleccionada]);
 
+  useEffect(() => {
+    if (tiendaSeleccionada && mostradorSeleccionado && !esEdicion) {
+      fetchFolioEstimado(mostradorSeleccionado);
+    }
+  }, [tiendaSeleccionada, mostradorSeleccionado, esEdicion]);
+
   const handleRegistrarVenta = async () => {
     if (!clienteSeleccionado || carrito.length === 0) {
       message.warning("Completa todos los campos obligatorios");
       return;
     }
 
-    setLoading(true);
+    if (clienteSeleccionado && carrito.length > 0) {
+      const cliente = clientes.find(c => c.id === clienteSeleccionado);
+      const pagoCredito = pagosRecibidos.some(p => p.metodo.startsWith("CRED"));
 
-    const url = esEdicion ? `/api/ventas/${idVenta}` : "/api/ventas";
+      if (pagoCredito) {
+        const creditoDisponible = (Number(cliente.creditLimit) || 0) - (Number(cliente.creditBalance) || 0);
+
+        if (creditoDisponible < total) {
+          message.error("El cliente no tiene suficiente crédito disponible para esta venta");
+          setLoading(false);
+          return;
+        }
+
+      const hoy = new Date();
+      const fechaUltimaCompra = new Date(cliente.updatedAt);
+      let fechaLimite = new Date(fechaUltimaCompra);
+
+      if (cliente.creditType === "RESTABLECIDO") {
+        fechaLimite.setDate(hoy.getDate() + cliente.creditDays);
+      } else {
+        fechaLimite.setDate(fechaUltimaCompra.getDate() + cliente.creditDays);
+      }
+
+      if (hoy > fechaLimite) {
+        message.error(
+          `El crédito del cliente está vencido (${
+            cliente.creditType === "RESTABLECIDO" ? "restablecido" : "renovado"
+          }). Debe realizar pagos antes de continuar.`
+        );
+        setLoading(false);
+        return;
+      }
+      }
+    }
+
+    setLoading(true);
 
     const payload = {
       clienteId: clienteSeleccionado,
       storeId: tiendaSeleccionada,
       cajaId: mostradorSeleccionado,
-      productos: carrito.map(({ id, cantidad }) => ({ productoId: id, cantidad })),
+      productos: carrito.map(({ id, cantidad, priceBase, priceFinal }) => ({
+        productoId: id,
+        cantidad,
+        priceBase,
+        priceFinal
+      })),
       formasPago: pagosRecibidos,
+      importeRecibido: pagosRecibidos.reduce((acc, p) => acc + (p.importe || 0), 0),
+      cambio: pagosRecibidos.reduce((acc, p) => acc + (p.importe || 0), 0) - total
     };
 
     try {
       if (esEdicion) {
-        await apiClient.put(url, payload);
+        await apiClient.put(`/api/ventas/${idVenta}`, payload);
         message.success("Venta actualizada correctamente");
         navigate("/ventas/panel");
       } else {
-        await apiClient.post(url, payload);
+        await apiClient.post("/api/ventas", payload);
         message.success("Venta registrada correctamente");
         setCarrito([]);
         setPagosRecibidos([]);
         setClienteSeleccionado(null);
         setModalPanelPago(false);
-        fetchFolio();
-        setProductoSeleccionado(null); 
+        if (mostradorSeleccionado) {
+          fetchFolioEstimado(mostradorSeleccionado);
+        }
       }
     } catch (error) {
       console.error("Error al registrar venta:", error);
-      message.error("No se pudo registrar la venta");
+      const msg = error.response?.data?.error || "No se pudo registrar la venta";
+      message.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuardarPendiente = async () => {
+    if (!clienteSeleccionado || carrito.length === 0) {
+      message.warning("Completa todos los campos obligatorios antes de guardar como pendiente");
+      return;
+    }
+
+    setLoading(true);
+
+    const payload = {
+      clienteId: clienteSeleccionado,
+      storeId: tiendaSeleccionada,
+      cajaId: mostradorSeleccionado,
+      productos: carrito.map(({ id, cantidad, priceBase, priceFinal }) => ({
+        productoId: id,
+        cantidad,
+        priceBase,
+        priceFinal
+      })),
+      formasPago: pagosRecibidos,
+      importeRecibido: pagosRecibidos.reduce((acc, p) => acc + (p.importe || 0), 0),
+      cambio: pagosRecibidos.reduce((acc, p) => acc + (p.importe || 0), 0) - total
+    };
+
+    try {
+      if (esEdicion) {
+        await apiClient.put(`/api/ventas/${idVenta}`, payload);
+        message.success("Venta actualizada y emitida");
+        navigate("/ventas/panel");
+      } else {
+        await apiClient.post("/api/ventas/pendiente", payload);
+        message.success("Venta guardada como PENDIENTE");
+        setCarrito([]);
+        setPagosRecibidos([]);
+        setClienteSeleccionado(null);
+        setProductoSeleccionado(null);
+        if (mostradorSeleccionado) {
+          fetchFolioEstimado(mostradorSeleccionado);
+        }
+      }
+    } catch (err) {
+      console.error("Error al guardar venta:", err);
+      const msg = err.response?.data?.error || "No se pudo guardar la venta";
+      message.error(msg);
     } finally {
       setLoading(false);
     }
@@ -212,8 +336,8 @@ const Ventas = () => {
       <Menu.Item key="nueva" icon={<PlusOutlined />} onClick={() => { setCarrito([]); setPagosRecibidos([]); }}>
         Nueva venta
       </Menu.Item>
-      <Menu.Item key="guardar" icon={<SaveOutlined />} onClick={() => setModalPanelPago(true)}>
-        Pagar
+      <Menu.Item key="pendiente" icon={<PauseCircleOutlined />} onClick={handleGuardarPendiente}>
+        Guardar como pendiente
       </Menu.Item>
       <Menu.Item key="recargar" icon={<ReloadOutlined />} onClick={() => window.location.reload()}>
         Recargar
@@ -233,7 +357,9 @@ const Ventas = () => {
       <Content style={{ padding: 16, background: "#eaf0fb" }}>
         <div style={{ maxWidth: 1200, margin: "auto", background: "#fff", borderRadius: 8, padding: 24, boxShadow: "0 2px 8px #d5deef" }}>
           <Title level={4}>Punto de Venta</Title>
-          <Text type="secondary" style={{ fontSize: 18, fontWeight: "bold" }}>FOLIO: {folio}</Text>
+          <Text type="secondary" style={{ fontSize: 18, fontWeight: "bold" }}>
+            FOLIO: {folioAMostrar}
+          </Text>
           {!ventaHabilitada && (
             <div style={{ background: "#fff3cd", padding: 16, margin: "16px 0", border: "1px solid #ffeeba", borderRadius: 6 }}>
               <Text strong>Debes seleccionar una tienda y un mostrador para comenzar</Text>
@@ -259,7 +385,14 @@ const Ventas = () => {
               <SelectorProductos
                 productos={productos}
                 onSelect={!modoVista ? (producto) => {
-                  agregarProducto(producto.id);
+                  agregarProducto({
+                    id: producto.id,
+                    name: producto.name,
+                    description: producto.description,
+                    priceBase: producto.priceBase ?? 0,
+                    priceFinal: producto.priceFinal ?? producto.priceBase ?? 0,
+                    cantidad: 1,
+                  });
                   setProductoSeleccionado(null);
                 } : undefined}
                 value={productoSeleccionado}
@@ -267,22 +400,23 @@ const Ventas = () => {
                 disabled={!ventaHabilitada || modoVista}
               />
             </div>
-
             <TablaCarrito
               items={carrito}
               onCantidadChange={!modoVista ? cambiarCantidad : undefined}
               onEliminar={!modoVista ? eliminarDelCarrito : undefined}
-              total={total}
+              subtotal={subtotal}     
+              impuestos={impuestos}   
+              total={total}           
+              modo={modo}
               soloLectura={modoVista}
             />
-
             <Button
               type="primary"
               size="large"
               icon={<DollarOutlined />}
               block
               style={{ fontSize: 24, height: 60 }}
-              onClick={() => setModalPanelPago(true)}
+              onClick={() => { setModalPanelPago(true)}}
               disabled={!ventaHabilitada || carrito.length === 0 || loading || modoVista}
             >
               PAGAR
@@ -331,19 +465,44 @@ const Ventas = () => {
         centered
         destroyOnClose
       >
-        <PanelResumenPago
-          metodosPago={metodosPago.map(mp => ({ key: mp.id, descripcion: `${mp.clave} - ${mp.descripcion}` }))}
-          subtotal={subtotal}
-          impuestos={impuestos}
-          total={total}
-          pagosRecibidos={pagosRecibidos}
-          onAgregarPago={(metodoPagoSeleccionado) => {
-            setMetodoSeleccionado(metodoPagoSeleccionado);
-            setTimeout(() => setModalRecibido(true), 250);
-          }}
-          onConfirmarPago={handleRegistrarVenta}
-          onCancelar={() => setModalPanelPago(false)}
-        />
+          <PanelResumenPago
+            metodosPago={metodosPago.map(mp => ({ key: mp.id, descripcion: `${mp.clave} - ${mp.descripcion}` }))}
+            subtotal={subtotal}   
+            impuestos={impuestos} 
+            total={total}         
+            pagosRecibidos={pagosRecibidos}
+            onAgregarPago={(metodoPagoSeleccionado) => {
+              if (metodoPagoSeleccionado.descripcion.startsWith("CRED")) {
+                const hoy = new Date();
+                const fechaBase = new Date(creditoCliente.updatedAt);
+                const fechaLimite = new Date(fechaBase);
+
+                if (creditoCliente.creditType === "RESTABLECIDO") {
+                  fechaLimite.setDate(hoy.getDate() + creditoCliente.creditDays);
+                } else {
+                  fechaLimite.setDate(fechaBase.getDate() + creditoCliente.creditDays);
+                }
+
+                if (creditoCliente.creditAvailable < total) {
+                  message.error("No hay crédito suficiente para usar este método");
+                  return;
+                }
+
+                if (hoy > fechaLimite) {
+                  message.error("El crédito del cliente está vencido");
+                  return;
+                }
+              }
+
+              setMetodoSeleccionado(metodoPagoSeleccionado);
+              setTimeout(() => setModalRecibido(true), 250);
+            }}
+            onEliminarPago={(pago, index) => {
+              setPagosRecibidos(prev => prev.filter((_, i) => i !== index));
+            }}
+            onConfirmarPago={handleRegistrarVenta}
+            onCancelar={() => setModalPanelPago(false)}
+          />
       </Modal>
 
       <ModalIngresoPago
@@ -357,6 +516,8 @@ const Ventas = () => {
         setValorIngreso={setValorIngreso}
         metodoPago={metodoSeleccionado}
         monedas={monedas}
+        totalOperacion={total}
+        modo={modo}
         onAceptar={({ valorOriginal, valorConvertido, moneda, metodo }) => {
           setPagosRecibidos(prev => [
             ...prev,

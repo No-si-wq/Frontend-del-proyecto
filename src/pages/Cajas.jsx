@@ -171,7 +171,6 @@ const Cajas = () => {
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id" },
     { title: "Número de Caja", dataIndex: "numeroDeCaja" },
     { title: "Descripción", dataIndex: "descripcion" },
     { title: "Formato Nota", dataIndex: "formatoNota" },

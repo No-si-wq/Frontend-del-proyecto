@@ -22,9 +22,14 @@ import {
   TagsOutlined,
   GlobalOutlined,
   FileOutlined,
+  StockOutlined,
+  SyncOutlined,
+  SettingOutlined,
+  SaveOutlined,
+  RollbackOutlined,
+  CloudUploadOutlined,
 } from "@ant-design/icons";
 
-// Módulos crudos del menú
 const rawModules = [
   {
     key: "ventas",
@@ -33,7 +38,8 @@ const rawModules = [
     submenu: [
       { key: "panel-ventas", title: "Panel de ventas", icon: <FileAddOutlined />, path: "/ventas/panel" },
       { key: "ventas", title: "Punto de venta", icon: <ShoppingCartOutlined />, path: "/ventas" },
-      { key: "clientes", title: "Clientes", icon: <UserOutlined />, path: "/clientes" }
+      { key: "clientes", title: "Clientes", icon: <UserOutlined />, path: "/clientes" },
+      { key: "credito-clientes", title: "Cuentas por Cobrar", icon: <UserOutlined />, path: "/pagos-cliente" },
     ]
   },
   {
@@ -68,7 +74,8 @@ const rawModules = [
     title: "Inventario",
     icon: <AppstoreOutlined />,
     submenu: [
-      { key: "inventario", title: "Panel de inventario", icon: <FileSearchOutlined />, path: "/inventarioConsulta" }
+      { key: "inventario", title: "Panel de inventario", icon: <FileSearchOutlined />, path: "/inventarioConsulta" },
+      { key: "kardex", title: "Kardex", icon: <SyncOutlined />, path: "/kardex" }
     ]
   },
   {
@@ -76,9 +83,20 @@ const rawModules = [
     title: "Reportes",
     icon: <BarChartOutlined />,
     submenu: [
-      { key: "reportes", title: "Panel de reportes", icon: <BarChartOutlined />, path: "/reportes" }
+      { key: "reportes", title: "Panel de reportes", icon: <BarChartOutlined />, path: "/reportes" },
+      { key: "utilidades", title: "Ventas y Utilidades", icon: <StockOutlined />, path: "/utilidad" }
     ]
-  }
+  },
+    {
+    key: "configuracion",
+    title: "Configuracion",
+    icon: <SettingOutlined />,
+    submenu: [
+      { key: "backup", title: "Generacion de Respaldos", icon: <SaveOutlined />, path: "/backup" },
+      { key: "restore", title: "Restauracion de Respaldos", icon: <RollbackOutlined />, path: "/restore" },
+      { key: "schedule", title: "Programacion de respaldo automatico", icon: <CloudUploadOutlined />, path: "/schedule" },
+    ]
+  },
 ];
 
 export const usePermissions = () => {

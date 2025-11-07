@@ -32,7 +32,7 @@ const PanelVentas = () => {
   }, []);
 
   const cancelarVenta = async () => {
-    if (!selectedVenta || selectedVenta.estado === "CANCELADA") return;
+    if (!selectedVenta || selectedVenta.estado !== "EMITIDA") return;
 
     try {
       await apiClient.patch(`/api/ventas/${selectedVenta.id}/cancel`);
@@ -50,6 +50,11 @@ const PanelVentas = () => {
       dataIndex: "folio",
       key: "folio",
       render: (f) => <Tag color="blue">{f}</Tag>,
+    },
+    {
+      title: "Caja",
+      dataIndex: "caja",
+      key: "caja",
     },
     {
       title: "Fecha",
@@ -73,10 +78,13 @@ const PanelVentas = () => {
       title: "Estado",
       dataIndex: "estado",
       key: "estado",
-      render: (estado) =>
-        <Tag color={estado === "CANCELADA" ? "red" : "green"}>
-          {estado}
-        </Tag>,
+      render: (estado) => {
+        let color = "green";
+        if (estado === "CANCELADA") color = "red";
+        else if (estado === "PENDIENTE") color = "blue";
+
+        return <Tag color={color}>{estado}</Tag>;
+      },
     },
   ];
 
@@ -109,7 +117,7 @@ const PanelVentas = () => {
         type="primary"
         icon={<EditOutlined />}
         onClick={() => navigate(`/ventas?id=${selectedVenta?.id}`)}
-        disabled={!selectedVenta || selectedVenta.estado === "CANCELADA"}
+        disabled={!selectedVenta || selectedVenta.estado !== "PENDIENTE"}
       >
         Editar
       </Button>
@@ -118,12 +126,12 @@ const PanelVentas = () => {
         onConfirm={cancelarVenta}
         okText="Sí, cancelar"
         cancelText="No"
-        disabled={!selectedVenta || selectedVenta.estado === "CANCELADA"}
+        disabled={!selectedVenta || selectedVenta.estado !== "EMITIDA"}
       >
         <Button
           danger
           icon={<StopOutlined />}
-          disabled={!selectedVenta || selectedVenta.estado === "CANCELADA"}
+          disabled={!selectedVenta || selectedVenta.estado !== "EMITIDA"}
         >
           Cancelar
         </Button>

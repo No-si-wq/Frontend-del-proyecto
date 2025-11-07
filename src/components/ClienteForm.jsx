@@ -36,6 +36,15 @@ const ClienteForm = ({ visible, onCreate, onCancel, confirmLoading }) => {
         <Form.Item name="address" label="Dirección" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
+        <Form.Item name="creditLimit" label="Límite de Crédito">
+          <Input type="number" />
+        </Form.Item>
+        <Form.Item name="creditBalance" label="Saldo de Crédito">
+          <Input type="number" />
+        </Form.Item>
+        <Form.Item name="creditDays" label="Días de Crédito">
+          <Input type="number" />
+        </Form.Item>
       </Form>
     </Modal>
   );

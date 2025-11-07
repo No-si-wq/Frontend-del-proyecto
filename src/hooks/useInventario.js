@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { message } from "antd";
 import apiClient from "../api/axios";
 
-// Utilidad para extraer datos de forma segura desde { data, total }
 const extractData = (response) =>
   Array.isArray(response?.data) ? response.data : [];
 
@@ -22,6 +21,7 @@ export const useInventario = (storeId) => {
     setLoading(true);
     try {
       const { data } = await apiClient.get(`/api/inventario/by-store/${storeId}`);
+      console.log("Inventario API response:", data);
       setProductos(Array.isArray(data) ? data : []);
     } catch (err) {
       message.error("Error al cargar el inventario");

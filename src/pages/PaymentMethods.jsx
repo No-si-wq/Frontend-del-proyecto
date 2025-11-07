@@ -162,10 +162,10 @@ export default function PaymentMethods() {
         >
           Añadir
         </Button>
-        <Button icon={<EditOutlined />} onClick={onEdit} style={{ marginRight: 8 }} disabled={!current}>Editar</Button>
+        <Button icon={<EditOutlined />} onClick={onEdit} style={{ marginRight: 8 }} disabled={!current || current.clave === "CRED"} >Editar</Button>
         <Popconfirm title="¿Seguro que deseas eliminar?" onConfirm={onDelete}>
           <Button icon={<DeleteOutlined />} danger style={{ marginRight: 8 }} 
-          disabled={!current} hidden={!canDeletepaymentMethods}>
+          disabled={!current || current.clave === "CRED"} hidden={!canDeletepaymentMethods}>
             Eliminar</Button>
         </Popconfirm>
         <Button icon={<ReloadOutlined />} onClick={() => fetchData(page)}>Actualizar</Button>
@@ -223,7 +223,7 @@ export default function PaymentMethods() {
               { validator: validateClave }
             ]}
           >
-            <Input disabled={editMode} />
+            <Input disabled={editMode && current?.clave === "CRED"} />
           </Form.Item>
           <Form.Item name="descripcion" label="Descripción" rules={[{ required: true }]}>
             <Input />

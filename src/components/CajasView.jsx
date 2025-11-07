@@ -25,7 +25,7 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-import { useCajas } from "../hooks/useCajas"; // ✅ Asegúrate de importar tu nuevo hook
+import { useCajas } from "../hooks/useCajas";
 
 const { TabPane } = Tabs;
 
@@ -144,7 +144,6 @@ const CajasView = ({ storeId }) => {
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id" },
     { title: "Número de Caja", dataIndex: "numeroDeCaja" },
     { title: "Descripción", dataIndex: "descripcion" },
     { title: "Formato Nota", dataIndex: "formatoNota" },

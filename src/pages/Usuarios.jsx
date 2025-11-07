@@ -51,7 +51,6 @@ const Usuarios = () => {
     fetchUsuarios();
   }, []);
 
-  // Eliminar usuario
   const onDelete = async () => {
     if (!selectedUsuario) return;
     Modal.confirm({
@@ -119,9 +118,7 @@ const Usuarios = () => {
     }
   };
 
-  // Tabla
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
     { title: "Usuario", dataIndex: "username", key: "username" },
     { title: "Email", dataIndex: "email", key: "email" },
     { title: "Rol", dataIndex: "role", key: "role" },
@@ -133,7 +130,6 @@ const Usuarios = () => {
     },
   ];
 
-  // Ribbon
   const ribbonActions = (
     <Tabs
       defaultActiveKey="1"

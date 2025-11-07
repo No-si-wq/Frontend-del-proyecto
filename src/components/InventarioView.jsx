@@ -23,57 +23,52 @@ const InventarioView = ({ storeId }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [precioFinal, setPrecioFinal] = useState(0);
+  const [costoFinal, setCostoFinal] = useState(0);
   const [form] = Form.useForm();
 
-  // Filtrar productos cuando cambian busqueda o productos
   useEffect(() => {
     const term = busqueda.trim().toLowerCase();
     setProductosFiltrados(
       term
-        ? productos.filter(p =>
-            [p.name ]
-              .some(s => s?.toLowerCase().includes(term))
-          )
+        ? productos.filter(p => [p.name, p.sku].some(s => s?.toLowerCase().includes(term)))
         : productos
     );
   }, [busqueda, productos]);
 
-  // Sincronizar formulario con producto seleccionado cuando se abre modal de edición
   useEffect(() => {
     if (editMode && selectedProducto) {
-      const tax = selectedProducto.tax?.percent ?? 0;
-      const precioSinImpuesto = selectedProducto.price / (1 + tax);
-
       form.setFieldsValue({
         name: selectedProducto.name,
         sku: selectedProducto.sku,
         quantity: selectedProducto.quantity,
-        price: precioSinImpuesto.toFixed(2),
+        priceBase: selectedProducto.priceBase || 0,
+        costBase: selectedProducto.costBase || 0,
         taxId: selectedProducto.tax?.id || null,
         categoryId: selectedProducto.category?.id || null,
       });
 
-      setPrecioFinal(selectedProducto.price.toFixed(2));
+      setPrecioFinal(selectedProducto.priceFinal || 0);
+      setCostoFinal(selectedProducto.costFinal || 0);
     } else {
       form.resetFields();
+      setPrecioFinal(0);
+      setCostoFinal(0);
     }
   }, [editMode, selectedProducto, form]);
 
-  // Exportar a Excel
-const exportToExcel = () => {
-  const rows = productosFiltrados.map(p => {
-    const impuesto = p.tax?.percent ? p.price * p.tax.percent : 0;
-    return {
+  const exportToExcel = () => {
+    const rows = productosFiltrados.map(p => ({
       Nombre: p.name,
       SKU: p.sku,
       Cantidad: p.quantity,
-      Precio: p.price.toFixed(2),
-      Impuesto: p.tax?.percent != null ? `${(p.tax.percent * 100).toFixed(2)}%` : "0%",
-      "Monto Impuesto": impuesto.toFixed(2),
-      "Precio con impuesto": (p.price + impuesto).toFixed(2),
+      "Costo (sin impuesto)": (p.costBase ?? 0).toFixed(2),
+      "Costo (con impuesto)": (p.costFinal ?? 0).toFixed(2),
+      "Precio (sin impuesto)": (p.priceBase ?? 0).toFixed(2),
+      "Precio (con impuesto)": (p.priceFinal ?? 0).toFixed(2),
+      Impuesto: p.tax?.percent ? `${(p.tax.percent * 100).toFixed(2)}%` : "0%",
       Categoría: p.category?.name || "Sin categoría"
-    };
-  });
+    }));
+
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Inventario");
@@ -117,20 +112,40 @@ const exportToExcel = () => {
     });
   };
 
+  const recalcTotals = () => {
+    const values = form.getFieldsValue();
+    const impuesto = taxOptions.find(t => t.value === values.taxId);
+    const percent = impuesto?.percent || 0;
+
+    const newPriceFinal = (values.priceBase || 0) * (1 + percent);
+    const newCostFinal = (values.costBase || 0) * (1 + percent);
+
+    setPrecioFinal(newPriceFinal.toFixed(2));
+    setCostoFinal(newCostFinal.toFixed(2));
+  };
+
   const onFinish = async (values) => {
     const impuesto = taxOptions.find(t => t.value === values.taxId);
     const percent = impuesto?.percent || 0;
-    const precioConImpuesto = parseFloat(values.price) * (1 + percent);
 
-    const payload = {
+    const priceFinal = values.priceBase * (1 + percent);
+    const costFinal = values.costBase * (1 + percent);
+
+    const basePayload = {
       name: values.name,
       sku: values.sku,
-      quantity: Number(values.quantity),
-      price: precioConImpuesto,
+      priceBase: values.priceBase,
+      priceFinal,
+      costBase: values.costBase,
+      costFinal,
       taxId: values.taxId,
       categoryId: values.categoryId || null,
       storeId,
     };
+
+    const payload = editMode
+      ? basePayload
+      : { ...basePayload, quantity: 0 };
 
     try {
       let response;
@@ -140,47 +155,28 @@ const exportToExcel = () => {
         response = await apiClient.post(`/api/inventario/tienda/${storeId}`, payload);
       }
 
-      const productoGuardado = response.data;
       message.success(editMode ? "Producto actualizado" : "Producto creado");
       setModalVisible(false);
       form.resetFields();
       setSelectedProducto(null);
       await fetchProductos();
 
-      if (editMode) {
-        setSelectedProducto(productoGuardado);
-      }
+      if (editMode) setSelectedProducto(response.data);
     } catch (error) {
       console.error("Error al guardar producto:", error.response?.data || error.message);
-      message.error("Error al guardar el producto");
+      message.error(error.response?.data?.error || "Error al guardar el producto");
     }
   };
 
-  
   const columns = [
     { title: "Nombre", dataIndex: "name", key: "name" },
-    { title: "SKU", dataIndex: "sku", key: "sku" },
-    { title: "Cantidad", dataIndex: "quantity", key: "quantity" },
-    {
-      title: "Precio (con impuesto)",
-      dataIndex: "price",
-      key: "price",
-      render: v => `L. ${v.toFixed(2)}`
-    },
-    {
-      title: "Impuesto",
-      dataIndex: "tax",
-      key: "tax",
-      render: (t, record) =>
-        t?.percent != null
-          ? `(${(t.percent * 100).toFixed(2)}%) - L. ${(record.price * t.percent).toFixed(2)}`
-          : "Sin impuesto"
-    },
-    {
-      title: "Categoría",
-      key: "category",
-      render: (_, r) => r.category?.name || "Sin categoría"
-    }
+    { title: "Código", dataIndex: "sku", key: "sku" },
+    { title: "Costo (sin impuesto)", dataIndex: "costBase", key: "costBase", render: v => `L. ${(v ?? 0).toFixed(2)}` },
+    { title: "Costo (con impuesto)", dataIndex: "costFinal", key: "costFinal", render: v => `L. ${(v ?? 0).toFixed(2)}` },
+    { title: "Precio (sin impuesto)", dataIndex: "priceBase", key: "priceBase", render: v => `L. ${(v ?? 0).toFixed(2)}` },
+    { title: "Precio (con impuesto)", dataIndex: "priceFinal", key: "priceFinal", render: v => `L. ${(v ?? 0).toFixed(2)}` },
+    { title: "Impuesto", dataIndex: "tax", key: "tax", render: (t) => t ? `${(t.percent * 100).toFixed(2)}%` : "Sin impuesto" },
+    { title: "Categoría", key: "category", render: (_, r) => r.category?.name || "Sin categoría" }
   ];
 
   return (
@@ -226,11 +222,7 @@ const exportToExcel = () => {
         })}
         rowClassName={record => (selectedProducto?.id === record.id ? "ant-table-row-selected" : "")}
         pagination={{ pageSize: 12 }}
-        onChange={(pagination, filters, sorter) => {
-          fetchProductos(); 
-        }}
       />
-
 
       <Modal
         open={modalVisible}
@@ -243,54 +235,35 @@ const exportToExcel = () => {
         footer={null}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={onFinish}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={(values) => {
+            onFinish({ ...values, quantity: 0 });
+          }}
+          onValuesChange={recalcTotals}
+        ></Form>
+        <Form form={form} layout="vertical" onFinish={onFinish} onValuesChange={recalcTotals}>
           <Form.Item name="name" label="Nombre" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="sku" label="SKU" rules={[
-            { required: true, message: "El SKU es obligatorio" }, 
-            { type: "string", pattern: /^[0-9]+$/, message: "El SKU debe ser un número" }]}>
+          <Form.Item name="sku" label="Código" rules={[{ required: true, message: "El SKU es obligatorio" }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="quantity" label="Cantidad" rules={[{ required: true }]}>
-            <InputNumber style={{ width: "100%" }} min={0} />
+          <Form.Item name="costBase" label="Costo sin impuesto" rules={[{ required: true }]}>
+            <InputNumber min={0} step={0.01} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-            name="price"
-            label="Precio (sin impuesto)"
-            rules={[
-              { required: true, message: "El precio es obligatorio" },
-              { type: "number", min: 0, message: "El precio debe ser mayor o igual a 0" }
-            ]}
-          >
-            <InputNumber
-              style={{ width: "100%" }}
-              min={0}
-              step={0.01}
-              onChange={(value) => {
-                const impuesto = taxOptions.find(t => t.value === form.getFieldValue("taxId"));
-                const porcentaje = impuesto?.percent || 0;
-                const precioConImpuesto = parseFloat(value || 0) * (1 + porcentaje);
-                setPrecioFinal(precioConImpuesto.toFixed(2));
-              }}
-            />
+          <Form.Item name="priceBase" label="Precio sin impuesto" rules={[{ required: true }]}>
+            <InputNumber min={0} step={0.01} style={{ width: "100%" }} />
           </Form.Item>
           <Form.Item name="taxId" label="Impuesto">
-            <Select
-              placeholder="Seleccione un impuesto"
-              allowClear
-              options={taxOptions}
-              onChange={(value) => {
-                const precioBase = form.getFieldValue("price");
-                const impuesto = taxOptions.find(t => t.value === value);
-                const porcentaje = impuesto?.percent || 0;
-                const precioConImpuesto = parseFloat(precioBase || 0) * (1 + porcentaje);
-                setPrecioFinal(precioConImpuesto.toFixed(2));
-              }}
-            />
+            <Select placeholder="Seleccione un impuesto" allowClear options={taxOptions} />
           </Form.Item>
           <Form.Item label="Precio con impuesto">
             <Input value={`L. ${precioFinal}`} disabled />
+          </Form.Item>
+          <Form.Item label="Costo con impuesto">
+            <Input value={`L. ${costoFinal}`} disabled />
           </Form.Item>
           <Form.Item name="categoryId" label="Categoría">
             <Select placeholder="Seleccione una categoría" allowClear>
@@ -301,7 +274,7 @@ const exportToExcel = () => {
               ))}
             </Select>
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={loading} >
+          <Button type="primary" htmlType="submit" block loading={loading}>
             {editMode ? "Actualizar" : "Guardar"}
           </Button>
         </Form>

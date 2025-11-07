@@ -30,7 +30,6 @@ const ModalSeleccionTienda = ({
   }, [open, tiendaSeleccionada, mostradorSeleccionado]);
 
   const handleOk = () => {
-    if (!tienda || !mostrador) return;
     onSeleccion(tienda, mostrador);
     onClose();
   };
@@ -43,7 +42,7 @@ const ModalSeleccionTienda = ({
       title="Selecciona la Tienda y Mostrador"
       onCancel={onClose}
       onOk={handleOk}
-      okButtonProps={{ disabled: !tienda }}
+      okButtonProps={{ disabled: !tienda || !mostrador }}
     >
       <div style={{ marginBottom: 12 }}>
         <label>Tienda:</label>

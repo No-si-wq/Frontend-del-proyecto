@@ -23,7 +23,7 @@ export default function Reportes() {
   const [loadingDatos, setLoadingDatos] = useState(false);
 
   const columnsVentas = [
-    { title: "FOLIO", dataIndex: "folio", key: "folio" },
+    { title: "ID", dataIndex: "id", key: "id" },
     {
       title: "Fecha",
       dataIndex: "createdAt",
@@ -41,7 +41,7 @@ export default function Reportes() {
   ];
 
   const columnsCompras = [
-    { title: "FOLIO", dataIndex: "folio", key: "folio" },
+    { title: "ID", dataIndex: "id", key: "id" },
     {
       title: "Fecha",
       dataIndex: "createdAt",
@@ -70,15 +70,10 @@ export default function Reportes() {
     if (!validarRango()) return;
 
     setLoadingDatos(true);
-    const [from, to] = dates.map((d) => d.format("YYYY-MM-DD"));
+    const [from, to] = dates.map(d => d.format("YYYY-MM-DD"));
 
     try {
-      const { data } = await apiClient.get("/api/reports/datos", {
-        params: { from, to },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const { data } = await apiClient.get("/api/reports/datos", { params: { from, to } });
       setVentas(data.ventas || []);
       setCompras(data.compras || []);
     } catch (error) {
@@ -89,33 +84,31 @@ export default function Reportes() {
     }
   };
 
-  const descargarPDF = async (tipo) => {
+  const descargarReporte = async (tipo, formato = "pdf") => {
     if (!validarRango()) return;
-
-    const [from, to] = dates.map((d) => d.format("YYYY-MM-DD"));
-
+    const [from, to] = dates.map(d => d.format("YYYY-MM-DD"));
     try {
-      const { data } = await apiClient.get(`/api/reports/${tipo}`, {
-        params: { from, to },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        responseType: "blob",
+      const response = await apiClient.get(`/api/reports/${tipo}/export`, {
+        params: { from, to, format: formato },
+        responseType: "blob"
       });
 
-      const blob = new Blob([data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
+      const mime = formato === "pdf" ? "application/pdf" : 
+                   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      const extension = formato === "pdf" ? "pdf" : "xlsx";
 
+      const blob = new Blob([response.data], { type: mime });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `reporte_${tipo}_${from}_a_${to}.pdf`;
+      link.download = `reporte_${tipo}_${from}_a_${to}.${extension}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error al descargar PDF:", error);
-      message.error("Error al descargar el archivo PDF.");
+      console.error(`Error al descargar ${tipo.toUpperCase()}:`, error);
+      message.error(`Error al descargar el archivo ${formato.toUpperCase()}.`);
     }
   };
 
@@ -125,63 +118,35 @@ export default function Reportes() {
 
   return (
     <Card>
-      <Button
-        type="default"
-        onClick={() => navigate("/home")}
-        style={{ marginBottom: 16 }}
-      >
+      <Button type="default" onClick={() => navigate("/home")} style={{ marginBottom: 16 }}>
         Ir al inicio
       </Button>
       <Title level={2}>Reportes de Compras y Ventas</Title>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <RangePicker
-          onChange={setDates}
-          format="YYYY-MM-DD"
-          allowClear
-          value={dates}
-        />
-        <Button type="primary" onClick={consultarDatos} loading={loadingDatos}>
-          Consultar
-        </Button>
-        <Button onClick={() => descargarPDF("ventas")} type="dashed">
-          Descargar PDF Ventas
-        </Button>
-        <Button onClick={() => descargarPDF("compras")} type="dashed">
-          Descargar PDF Compras
-        </Button>
+        <RangePicker onChange={setDates} format="YYYY-MM-DD" allowClear value={dates} />
+        <Button type="primary" onClick={consultarDatos} loading={loadingDatos}>Consultar</Button>
+        <Button onClick={() => descargarReporte("ventas", "pdf")} type="dashed">PDF Ventas</Button>
+        <Button onClick={() => descargarReporte("ventas", "excel")} type="dashed">Excel Ventas</Button>
+        <Button onClick={() => descargarReporte("compras", "pdf")} type="dashed">PDF Compras</Button>
+        <Button onClick={() => descargarReporte("compras", "excel")} type="dashed">Excel Compras</Button>
       </Space>
 
       <Card title="Ventas" style={{ marginTop: 24 }}>
-        <Table
-          dataSource={ventas}
-          columns={columnsVentas}
-          rowKey="id"
-          pagination={false}
-        />
+        <Table dataSource={ventas} columns={columnsVentas} rowKey="id" pagination={false} />
       </Card>
 
       <Card title="Compras" style={{ marginTop: 24 }}>
-        <Table
-          dataSource={compras}
-          columns={columnsCompras}
-          rowKey="id"
-          pagination={false}
-        />
+        <Table dataSource={compras} columns={columnsCompras} rowKey="id" pagination={false} />
       </Card>
 
       <Card style={{ marginTop: 24 }}>
         <Title level={4}>
-          Total Ventas:{" "}
-          <span style={{ color: "#389e0d" }}> L. {totalVentas.toFixed(2)}</span>
+          Total Ventas: <span style={{ color: "#389e0d" }}> L. {totalVentas.toFixed(2)}</span>
           <br />
-          Total Compras:{" "}
-          <span style={{ color: "#cf1322" }}>L. {totalCompras.toFixed(2)}</span>
+          Total Compras: <span style={{ color: "#cf1322" }}>L. {totalCompras.toFixed(2)}</span>
           <br />
-          Diferencia:{" "}
-          <span style={{ color: diferencia >= 0 ? "green" : "red" }}>
-            L. {diferencia.toFixed(2)}
-          </span>
+          Diferencia: <span style={{ color: diferencia >= 0 ? "green" : "red" }}>L. {diferencia.toFixed(2)}</span>
         </Title>
       </Card>
     </Card>

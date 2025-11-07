@@ -90,7 +90,7 @@ const Login = () => {
           </Form.Item>
         </Form>
         <div style={{ marginTop: 16, textAlign: 'center' }}>
-          ¿No tienes una empresa? <Link to="/register-company">Regístrala aquí</Link>
+          ¿No tienes un usuario? <Link to="/register">Regístralo aquí</Link>
         </div>
       </Card>
     </div>

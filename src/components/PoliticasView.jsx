@@ -1,4 +1,3 @@
-// components/tiendas/PoliticasView.jsx
 import React from "react";
 import { Card } from "antd";
 
