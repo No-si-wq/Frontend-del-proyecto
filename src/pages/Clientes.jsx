@@ -85,12 +85,25 @@ const Clientes = () => {
 
   const onFinish = async (values) => {
     try {
-      const payload = {
-        ...values,
-        creditLimit: Number(values.creditLimit) || 0,
-        creditBalance: Number(values.creditBalance) || 0,
-        creditDays: Number(values.creditDays) || 0,
-      };
+      let payload;
+
+      if(editMode){
+        payload = {
+          name: values.name,
+          rtn: values.rtn,
+          email: values.email,
+          phone: values.phone,
+          address: values.address,
+          creditLimit: Number(values.creditLimit) || 0,
+        };
+      } else {
+        payload = {
+          ...values,
+          creditLimit: Number(values.creditLimit) || 0,
+          creditBalance: Number(values.creditBalance) || 0,
+          creditDays: Number(values.creditDays) || 0,
+        };
+      }
       if (editMode) {
         await apiClient.put(`/api/clientes/${selectedCliente.id}`, payload);
         message.success("Cliente actualizado exitosamente");
