@@ -38,13 +38,21 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     setError('');
+
     try {
       const response = await apiClient.post('/api/auth/login', values);
-      const { token } = response.data;
-      
-      handleLogin(token);
 
-      navigate('/home'); 
+      const { token, username, roleId, roleName, permissions } = response.data;
+
+      await handleLogin({
+        token,
+        username,
+        roleId,
+        roleName,
+        permissions: permissions ?? [],
+      });
+
+      navigate('/home');
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'Error al iniciar sesión');
@@ -59,7 +67,16 @@ const Login = () => {
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <Title level={3}>Iniciar Sesión</Title>
         </div>
-        {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 16 }} />}
+
+        {error && (
+          <Alert
+            message={error}
+            type="error"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
+
         <Form
           name="login"
           initialValues={{ remember: true }}
@@ -75,6 +92,7 @@ const Login = () => {
           >
             <Input prefix={<UserOutlined />} placeholder="Usuario" size="large" />
           </Form.Item>
+
           <Form.Item
             name="password"
             label="Contraseña"
@@ -83,12 +101,20 @@ const Login = () => {
           >
             <Input.Password prefix={<LockOutlined />} placeholder="Contraseña" size="large" />
           </Form.Item>
+
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={loading}
+            >
               Entrar
             </Button>
           </Form.Item>
         </Form>
+
         <div style={{ marginTop: 16, textAlign: 'center' }}>
           ¿No tienes un usuario? <Link to="/register">Regístralo aquí</Link>
         </div>

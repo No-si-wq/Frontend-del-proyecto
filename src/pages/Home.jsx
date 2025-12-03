@@ -2,14 +2,12 @@ import { usePermissions } from "../hooks/usePermissions";
 import React, { useContext, useState } from "react";
 import { Layout, Menu, Button } from "antd";
 import { useNavigate, useLocation } from "react-router-dom";
-import { canAccess } from "../utils/permission";
 import { AuthContext } from "../hooks/AuthProvider";
 import { LogoutOutlined } from "@ant-design/icons";
 import { Typography } from 'antd';
 
 const Home = () => {
-  const { auth, handleLogout } = useContext(AuthContext);
-  const role = auth?.role || '';
+  const { handleLogout } = useContext(AuthContext);
   const { modules } = usePermissions(); 
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,12 +15,7 @@ const Home = () => {
   const { Header, Content } = Layout;
   const { Title, Text } = Typography;
 
-  const filteredModules = modules
-    .map((mod) => {
-      const submenu = mod.submenu?.filter((item) => canAccess(role, item.path)) || [];
-      return submenu.length > 0 ? { ...mod, submenu } : null;
-    })
-    .filter(Boolean);
+  const filteredModules = modules;
 
   const handleMenuClick = (e) => {
     setSelectedKey(e.key);

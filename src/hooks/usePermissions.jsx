@@ -1,6 +1,5 @@
 import { useContext, useMemo } from "react";
 import { AuthContext } from "./AuthProvider";
-import { canAccess } from "../utils/permission";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCashRegister } from '@fortawesome/free-solid-svg-icons';
 
@@ -37,7 +36,7 @@ const rawModules = [
     icon: <DollarOutlined />,
     submenu: [
       { key: "panel-ventas", title: "Panel de ventas", icon: <FileAddOutlined />, path: "/ventas/panel" },
-      { key: "ventas", title: "Punto de venta", icon: <ShoppingCartOutlined />, path: "/ventas" },
+      { key: "Punto ventas", title: "Punto de venta", icon: <ShoppingCartOutlined />, path: "/ventas" },
       { key: "clientes", title: "Clientes", icon: <UserOutlined />, path: "/clientes" },
       { key: "credito-clientes", title: "Cuentas por Cobrar", icon: <UserOutlined />, path: "/pagos-cliente" },
     ]
@@ -47,7 +46,7 @@ const rawModules = [
     title: "Compras",
     icon: <ShoppingCartOutlined />,
     submenu: [
-      { key: "compras", title: "Registro de compras", icon: <ShoppingCartOutlined />, path: "/compras" },
+      { key: "Registro compras", title: "Registro de compras", icon: <ShoppingCartOutlined />, path: "/compras" },
       { key: "facturas-compras", title: "Panel de compras", icon: <FileAddOutlined />, path: "/compras/facturas" },
       { key: "proveedores", title: "Proveedores", icon: <TeamOutlined />, path: "/proveedores" }
     ]
@@ -59,6 +58,7 @@ const rawModules = [
     submenu: [
       { key: "tiendas", title: "Tiendas", icon: <ShopOutlined />, path: "/tiendas" },
       { key: "usuarios", title: "Usuarios", icon: <UserOutlined />, path: "/usuarios" },
+      { key: "permisos", title: "Crear Permisos", icon: <UserOutlined />, path: "/permisos" },
       { key: "formas-pago", title: "Formas de pago", icon: <CreditCardOutlined />, path: "/formas-pago" },
       { key: "dispositivos", title: "Dispositivos", icon: <DesktopOutlined />, path: "/dispositivos" },
       { key: "lineas", title: "Líneas", icon: <ApartmentOutlined />, path: "/lineas" },
@@ -74,7 +74,7 @@ const rawModules = [
     title: "Inventario",
     icon: <AppstoreOutlined />,
     submenu: [
-      { key: "inventario", title: "Panel de inventario", icon: <FileSearchOutlined />, path: "/inventarioConsulta" },
+      { key: "Panel inventario", title: "Panel de inventario", icon: <FileSearchOutlined />, path: "/inventarioConsulta" },
       { key: "kardex", title: "Kardex", icon: <SyncOutlined />, path: "/kardex" }
     ]
   },
@@ -83,7 +83,7 @@ const rawModules = [
     title: "Reportes",
     icon: <BarChartOutlined />,
     submenu: [
-      { key: "reportes", title: "Panel de reportes", icon: <BarChartOutlined />, path: "/reportes" },
+      { key: "Panel reportes", title: "Panel de reportes", icon: <BarChartOutlined />, path: "/reportes" },
       { key: "utilidades", title: "Ventas y Utilidades", icon: <StockOutlined />, path: "/utilidad" }
     ]
   },
@@ -101,16 +101,18 @@ const rawModules = [
 
 export const usePermissions = () => {
   const { auth } = useContext(AuthContext);
-  const role = auth?.role || "";
+  const permissions = auth?.permissions || [];
 
   const filteredModules = useMemo(() => {
     return rawModules
       .map((mod) => {
-        const submenu = mod.submenu?.filter((item) => canAccess(role, item.path)) || [];
+        const submenu = mod.submenu?.filter((item) =>
+          permissions.includes(item.path)
+        ) || [];
         return submenu.length > 0 ? { ...mod, submenu } : null;
       })
       .filter(Boolean);
-  }, [role]);
+  }, [permissions]);
 
   return { modules: filteredModules };
 };

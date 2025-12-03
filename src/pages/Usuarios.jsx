@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   Button,
@@ -23,12 +23,13 @@ import {
   HomeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import apiClient from '../api/axios';
+import apiClient from "../api/axios";
 
 const { TabPane } = Tabs;
 
 const Usuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState(null);
@@ -39,7 +40,7 @@ const Usuarios = () => {
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/api/usuarios');
+      const res = await apiClient.get("/api/usuarios");
       setUsuarios(res.data);
     } catch {
       message.error("Error al cargar usuarios");
@@ -47,8 +48,18 @@ const Usuarios = () => {
     setLoading(false);
   };
 
+  const fetchRoles = async () => {
+    try {
+      const res = await apiClient.get("/api/roles");
+      setRoles(res.data);
+    } catch {
+      message.error("Error al cargar roles");
+    }
+  };
+
   useEffect(() => {
     fetchUsuarios();
+    fetchRoles();
   }, []);
 
   const onDelete = async () => {
@@ -72,7 +83,7 @@ const Usuarios = () => {
     });
   };
 
-    const openCreateModal = () => {
+  const openCreateModal = () => {
     setEditMode(false);
     setSelectedUsuario(null);
     form.resetFields();
@@ -81,37 +92,50 @@ const Usuarios = () => {
 
   const openEditModal = () => {
     if (!selectedUsuario) return;
+
     setEditMode(true);
+
     form.setFieldsValue({
       username: selectedUsuario.username,
       email: selectedUsuario.email,
-      password: "", 
-      role: selectedUsuario.role,
+      password: "",
+      roleId: selectedUsuario.roleId,
     });
+
     setModalVisible(true);
   };
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const dataToSend = { ...values };
-      if (editMode && !values.password) {
-        delete dataToSend.password;
+      const dataToSend = {
+        username: values.username,
+        email: values.email,
+        roleId: values.roleId,
+      };
+
+      if (!editMode || values.password) {
+        dataToSend.password = values.password;
       }
-      
+
       if (editMode && selectedUsuario) {
-        await apiClient.put(`/api/usuarios/${selectedUsuario.id}`, dataToSend);
+        await apiClient.put(
+          `/api/usuarios/${selectedUsuario.id}`,
+          dataToSend
+        );
         message.success("Usuario actualizado exitosamente");
       } else {
         await apiClient.post("/api/usuarios", dataToSend);
         message.success("Usuario creado exitosamente");
       }
+
       setModalVisible(false);
       fetchUsuarios();
       form.resetFields();
       setSelectedUsuario(null);
     } catch (err) {
-      const errorMessage = err.response?.data?.error || "Error al guardar el usuario";
+      const errorMessage =
+        err.response?.data?.error || "Error al guardar el usuario";
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -121,7 +145,12 @@ const Usuarios = () => {
   const columns = [
     { title: "Usuario", dataIndex: "username", key: "username" },
     { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Rol", dataIndex: "role", key: "role" },
+    {
+      title: "Rol",
+      dataIndex: ["role", "name"],
+      key: "role",
+      render: (_, record) => record.role?.name ?? "—",
+    },
     {
       title: "Creado",
       dataIndex: "createdAt",
@@ -156,6 +185,7 @@ const Usuarios = () => {
               Inicio
             </Button>
           </Tooltip>
+
           <Tooltip title="Agregar usuario">
             <Button
               type="primary"
@@ -165,6 +195,7 @@ const Usuarios = () => {
               Añadir
             </Button>
           </Tooltip>
+
           <Tooltip title="Editar usuario">
             <Button
               icon={<EditOutlined />}
@@ -174,6 +205,7 @@ const Usuarios = () => {
               Editar
             </Button>
           </Tooltip>
+
           <Tooltip title="Eliminar usuario">
             <Button
               danger
@@ -184,6 +216,7 @@ const Usuarios = () => {
               Eliminar
             </Button>
           </Tooltip>
+
           <Tooltip title="Actualizar lista">
             <Button icon={<ReloadOutlined />} onClick={fetchUsuarios}>
               Actualizar
@@ -191,6 +224,7 @@ const Usuarios = () => {
           </Tooltip>
         </Space>
       </TabPane>
+
       <TabPane
         tab={
           <span>
@@ -204,6 +238,7 @@ const Usuarios = () => {
           <Button icon={<SearchOutlined />}>Buscar</Button>
         </Space>
       </TabPane>
+
       <TabPane
         tab={
           <span>
@@ -243,6 +278,7 @@ const Usuarios = () => {
         }}
       >
         {ribbonActions}
+
         <Table
           columns={columns}
           dataSource={usuarios}
@@ -250,12 +286,18 @@ const Usuarios = () => {
           rowKey="id"
           pagination={{ pageSize: 10 }}
           onRow={(record) => ({
-          onClick: () => setSelectedUsuario(record),
-        })}
-        rowClassName={(record) => (selectedUsuario?.id === record.id ? "ant-table-row-selected" : "")}
+            onClick: () => setSelectedUsuario(record),
+          })}
+          rowClassName={(record) =>
+            selectedUsuario?.id === record.id
+              ? "ant-table-row-selected"
+              : ""
+          }
           style={{ background: "white", borderRadius: 4 }}
         />
       </div>
+
+      {/* MODAL */}
       <Modal
         title={editMode ? "Editar Usuario" : "Añadir Usuario"}
         open={modalVisible}
@@ -275,6 +317,7 @@ const Usuarios = () => {
           >
             <Input />
           </Form.Item>
+
           <Form.Item
             name="email"
             label="Email"
@@ -285,23 +328,28 @@ const Usuarios = () => {
           >
             <Input />
           </Form.Item>
+
           <Form.Item
             name="password"
             label={editMode ? "Nueva contraseña" : "Contraseña"}
-            rules={[{ required: true, message: "Ingrese la contraseña" }]}
+            rules={[
+              { required: !editMode, message: "Ingrese la contraseña" },
+            ]}
           >
             <Input.Password />
           </Form.Item>
+
           <Form.Item
-            name="role"
+            name="roleId"
             label="Rol"
             rules={[{ required: true, message: "Seleccione un rol" }]}
           >
             <Select placeholder="Seleccione un rol">
-              <Select.Option value="admin">Administrador</Select.Option>
-              <Select.Option value="facturacion">Facturación</Select.Option>
-              <Select.Option value="ventas">Ventas</Select.Option>
-              <Select.Option value="contabilidad">Contabilidad</Select.Option>
+              {roles.map((r) => (
+                <Select.Option key={r.id} value={r.id}>
+                  {r.name}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
         </Form>

@@ -27,6 +27,7 @@ import PagosClientes from './pages/pagosClientes';
 import BackupButton from './pages/BackupButton';
 import RestoreButton from './pages/RestoreButton';
 import ScheduleBackup from './pages/scheduleButton';
+import Permisos from './pages/Permissions';
 
 function App() {
 
@@ -56,6 +57,7 @@ function App() {
           <Route path='/backup' element={<PrivateRoute><BackupButton/></PrivateRoute>} />
           <Route path='/restore' element={<PrivateRoute><RestoreButton/></PrivateRoute>} />
           <Route path='/schedule' element={<PrivateRoute><ScheduleBackup/></PrivateRoute>} />
+          <Route path='/permisos' element={<PrivateRoute><Permisos/></PrivateRoute>} />
           {/* Default route */}
           <Route 
             path="/home" 
