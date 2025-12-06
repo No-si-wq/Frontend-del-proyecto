@@ -48,7 +48,6 @@ const TiendasUI = () => {
     loadStores();
   }, []);
 
-  // Detecta si seleccionaron el nodo "Inventarios" y extrae el ID
   useEffect(() => {
     const storeId = extractStoreIdFromKey(selectedKey);
     setSelectedStoreId(storeId);
@@ -101,7 +100,7 @@ const TiendasUI = () => {
 
   const handleUpdate = async (id, values) => {
     try {
-      await updateStore(id, values); // ahora pasamos el ID correcto
+      await updateStore(id, values);
       await fetchTiendas();
       message.success("Tienda actualizada");
     } catch (error) {
@@ -135,7 +134,7 @@ const TiendasUI = () => {
   const renderContent = () => {
     if (!selectedKey) return <Title level={4}>Seleccione una tienda o módulo</Title>;
 
-    const modulo = selectedKey.split("-")[2]; // ahora tomamos la tercera parte
+    const modulo = selectedKey.split("-")[2];
     switch (modulo) {
       case "inventario":
         return <InventarioView storeId={selectedStoreId} />;

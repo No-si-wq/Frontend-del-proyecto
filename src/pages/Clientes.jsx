@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Table,
   Button,
@@ -23,19 +23,20 @@ import {
   SyncOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { usePermissions } from "../hooks/Permisos";
 import apiClient from "../api/axios";
+import { AuthContext } from "../hooks/AuthProvider";
 
 const { TabPane } = Tabs;
 
 const Clientes = () => {
+  const { auth } = useContext(AuthContext);
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
-  const { canDeleteClientes } = usePermissions();
   const navigate = useNavigate();
 
   const [renewModalVisible, setRenewModalVisible] = useState(false);
@@ -215,15 +216,16 @@ const Clientes = () => {
           </Tooltip>
 
           <Tooltip title="Eliminar cliente">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!selectedCliente}
-              hidden={!canDeleteClientes}
-              onClick={() => handleDelete(selectedCliente.id)}
-            >
-              Eliminar
-            </Button>
+            {canDelete && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                disabled={!selectedCliente}
+                onClick={() => handleDelete(selectedCliente.id)}
+              >
+                Eliminar
+              </Button>
+            )}
           </Tooltip>
 
           <Tooltip title="Renovar días de crédito">

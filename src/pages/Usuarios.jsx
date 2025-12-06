@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Table,
   Button,
@@ -23,17 +23,20 @@ import {
   HomeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../hooks/AuthProvider";
 import apiClient from "../api/axios";
 
 const { TabPane } = Tabs;
 
 const Usuarios = () => {
+  const { auth } = useContext(AuthContext);
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -41,7 +44,11 @@ const Usuarios = () => {
     setLoading(true);
     try {
       const res = await apiClient.get("/api/usuarios");
-      setUsuarios(res.data);
+      const normalizados = res.data.map(u => ({
+        ...u,
+        role: u.role || { id: null, name: "—" }
+      }));
+      setUsuarios(normalizados);
     } catch {
       message.error("Error al cargar usuarios");
     }
@@ -99,7 +106,7 @@ const Usuarios = () => {
       username: selectedUsuario.username,
       email: selectedUsuario.email,
       password: "",
-      roleId: selectedUsuario.roleId,
+      roleId: selectedUsuario.role?.id,
     });
 
     setModalVisible(true);
@@ -111,7 +118,7 @@ const Usuarios = () => {
       const dataToSend = {
         username: values.username,
         email: values.email,
-        roleId: values.roleId,
+        roleId: Number(values.roleId),
       };
 
       if (!editMode || values.password) {
@@ -163,8 +170,7 @@ const Usuarios = () => {
     <Tabs
       defaultActiveKey="1"
       type="card"
-      style={{ marginBottom: 16 }}
-      tabBarStyle={{ marginBottom: 0 }}
+      style={{ marginBottom: 24 }}
     >
       <TabPane
         tab={
@@ -207,14 +213,15 @@ const Usuarios = () => {
           </Tooltip>
 
           <Tooltip title="Eliminar usuario">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!selectedUsuario}
-              onClick={onDelete}
-            >
-              Eliminar
-            </Button>
+            {canDelete && 
+              (<Button
+                danger
+                icon={<DeleteOutlined />}
+                disabled={!selectedUsuario}
+                onClick={onDelete}
+              >
+                Eliminar
+              </Button>)}
           </Tooltip>
 
           <Tooltip title="Actualizar lista">
@@ -336,7 +343,9 @@ const Usuarios = () => {
               { required: !editMode, message: "Ingrese la contraseña" },
             ]}
           >
-            <Input.Password />
+            <Input.Password
+              placeholder={editMode ? "Dejar vacío para mantener la contraseña actual" : "Ingrese la contraseña"}
+            />
           </Form.Item>
 
           <Form.Item

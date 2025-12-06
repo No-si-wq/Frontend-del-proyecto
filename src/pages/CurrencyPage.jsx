@@ -1,22 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Popconfirm, message, Tabs } from 'antd';
-import { PlusOutlined, DeleteOutlined, HomeOutlined, EditOutlined, ReloadOutlined } from "@ant-design/icons";
+import React, { useEffect, useState, useContext } from 'react';
+import { 
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Popconfirm,
+  message,
+  Tabs 
+} from 'antd';
+import { 
+  PlusOutlined,
+  DeleteOutlined,
+  HomeOutlined,
+  EditOutlined,
+  ReloadOutlined 
+} from "@ant-design/icons";
 import { useNavigate } from 'react-router-dom';
-import { usePermissions } from '../hooks/Permisos';
+import { AuthContext } from "../hooks/AuthProvider";
 import apiClient from '../api/axios';
 
 const { TabPane } = Tabs;
 
 export default function CurrencyPage() {
+  const { auth } = useContext(AuthContext);
   const [data, setData] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [current, setCurrent] = useState(null);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
-  const { canDeleteMonedas } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -141,9 +158,10 @@ export default function CurrencyPage() {
         </Button>
         <Button icon={<EditOutlined />} onClick={onEdit} style={{ marginRight: 8 }} disabled={!current}>Editar</Button>
         <Popconfirm title="¿Seguro que deseas eliminar?" onConfirm={onDelete}>
-          <Button icon={<DeleteOutlined />} danger style={{ marginRight: 8 }} disabled={!current} hidden={!canDeleteMonedas}>
+          {canDelete && 
+          (<Button icon={<DeleteOutlined />} danger style={{ marginRight: 8 }} disabled={!current}>
             Eliminar
-          </Button>
+          </Button>)}
         </Popconfirm>
         <Button icon={<ReloadOutlined />} onClick={() => fetchData(page)}>Actualizar</Button>
       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Button,
   Card,
@@ -21,9 +21,11 @@ import {
 } from "@ant-design/icons";
 import apiClient from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../hooks/AuthProvider";
 
 const { TabPane } = Tabs;
 const Cajas = () => {
+  const { auth } = useContext(AuthContext);
   const [cajas, setCajas] = useState([]);
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,7 @@ const Cajas = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -40,7 +43,7 @@ const Cajas = () => {
       const { data } = await apiClient.get('/api/stores');
       setStores(data);
       if (data.length > 0) {
-        setSelectedStoreId(data[0].id); // Selecciona la primera tienda por defecto
+        setSelectedStoreId(data[0].id);
       }
     } catch {
       message.error("Error al cargar tiendas");
@@ -77,7 +80,7 @@ const Cajas = () => {
   };
 
   const validateClave = async (_, value) => {
-    if (!value || editMode) return Promise.resolve(); // Solo validar en modo agregar
+    if (!value || editMode) return Promise.resolve();
 
     try {
       const res = await fetch(`/api/cash-registers/check-clave/${value}`);
@@ -195,7 +198,8 @@ const Cajas = () => {
           okText="Sí"
           cancelText="No"
         >
-          <Button icon={<DeleteOutlined />} danger disabled={!selectedCaja}>Eliminar</Button>
+          {canDelete &&
+           (<Button icon={<DeleteOutlined />} danger disabled={!selectedCaja}>Eliminar</Button>)}
         </Popconfirm>
         <Button icon={<ReloadOutlined />} onClick={fetchCajas}>Actualizar</Button>
       </Space>

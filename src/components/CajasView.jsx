@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Button,
   Card,
@@ -8,7 +8,6 @@ import {
   Popconfirm,
   Table,
   Tabs,
-  message,
   Space,
   Select,
 } from "antd";
@@ -17,14 +16,12 @@ import {
   EditOutlined,
   DeleteOutlined,
   ReloadOutlined,
-  HomeOutlined,
   FileExcelOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
+import { AuthContext } from "../hooks/AuthProvider";
 import { useCajas } from "../hooks/useCajas";
 
 const { TabPane } = Tabs;
@@ -43,10 +40,11 @@ const CajasView = ({ storeId }) => {
   } = useCajas(storeId);
 
   const [selectedCaja, setSelectedCaja] = useState(null);
+  const { auth } = useContext(AuthContext);
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
-  const navigate = useNavigate();
 
   const [busqueda, setBusqueda] = useState("");
   const [cajasFiltradas, setCajasFiltradas] = useState([]);
@@ -171,9 +169,10 @@ const CajasView = ({ storeId }) => {
           okText="Sí"
           cancelText="No"
         >
-          <Button icon={<DeleteOutlined />} danger disabled={!selectedCaja}>
+          {canDelete && 
+          (<Button icon={<DeleteOutlined />} danger disabled={!selectedCaja}>
             Eliminar
-          </Button>
+          </Button>)}
         </Popconfirm>
         <Button icon={<ReloadOutlined />} onClick={() => fetchCajas()}>
           Actualizar

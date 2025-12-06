@@ -42,6 +42,7 @@ const PermissionsPage = () => {
 
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedPermission, setSelectedPermission] = useState(null);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
 
   const [modalRoleVisible, setModalRoleVisible] = useState(false);
   const [modalPermVisible, setModalPermVisible] = useState(false);
@@ -287,14 +288,16 @@ const PermissionsPage = () => {
           </Tooltip>
 
           <Tooltip title="Eliminar rol">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!selectedRole}
-              onClick={onDeleteRole}
-            >
-              Eliminar Rol
-            </Button>
+            {canDelete && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                disabled={!selectedRole}
+                onClick={onDeleteRole}
+              >
+                Eliminar Rol
+              </Button>
+              )}
           </Tooltip>
 
           <Tooltip title="Asignar permisos">
@@ -330,14 +333,16 @@ const PermissionsPage = () => {
           </Tooltip>
 
           <Tooltip title="Eliminar permiso">
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              disabled={!selectedPermission}
-              onClick={onDeletePermission}
-            >
-              Eliminar Permiso
-            </Button>
+            {canDelete && (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                disabled={!selectedPermission}
+                onClick={onDeletePermission}
+              >
+                Eliminar Permiso
+              </Button>
+            )}
           </Tooltip>
 
           <Tooltip title="Actualizar">

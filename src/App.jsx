@@ -20,7 +20,6 @@ import PaymentMethods from './pages/PaymentMethods';
 import CurrencyPage from './pages/CurrencyPage';
 import TaxesPage from './pages/TaxesPage';
 import TiendasUI from './pages/TiendasUI';
-import Cajas from './pages/Cajas';
 import UtilidadProducto from './pages/ReportesProducto';
 import KardexProductos from './pages/Kardex';
 import PagosClientes from './pages/pagosClientes';
@@ -50,7 +49,6 @@ function App() {
           <Route path='/monedas' element={<PrivateRoute><CurrencyPage/></PrivateRoute>} />
           <Route path='/impuestos' element={<PrivateRoute><TaxesPage/></PrivateRoute>} />
           <Route path='/tiendas' element={<PrivateRoute><TiendasUI/></PrivateRoute>} />
-          <Route path='/cajas' element={<PrivateRoute><Cajas/></PrivateRoute>} />
           <Route path='/utilidad' element={<PrivateRoute><UtilidadProducto/></PrivateRoute>} />
           <Route path='/kardex' element={<PrivateRoute><KardexProductos/></PrivateRoute>} />
           <Route path='/pagos-cliente' element={<PrivateRoute><PagosClientes/></PrivateRoute>} />

@@ -1,14 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Popconfirm, message, Tabs, Select } from 'antd';
-import { PlusOutlined, DeleteOutlined, HomeOutlined, EditOutlined, ReloadOutlined } from "@ant-design/icons";
+import React, { useEffect, useState, useContext } from 'react';
+import { 
+  Table,
+  Button, 
+  Modal, 
+  Form, 
+  Input, 
+  Popconfirm, 
+  message, 
+  Tabs, 
+  Select 
+} from 'antd';
+import { 
+  PlusOutlined, 
+  DeleteOutlined, 
+  HomeOutlined, 
+  EditOutlined, 
+  ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from 'react-router-dom';
-import { usePermissions } from '../hooks/Permisos';
+import { AuthContext } from "../hooks/AuthProvider";
 import apiClient from '../api/axios';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 export default function PaymentMethods() {
+  const { auth } = useContext(AuthContext);
   const [data, setData] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -18,7 +34,7 @@ export default function PaymentMethods() {
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
   const [currencies, setCurrencies] = useState([]);
-  const { canDeletepaymentMethods } = usePermissions();
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -164,9 +180,11 @@ export default function PaymentMethods() {
         </Button>
         <Button icon={<EditOutlined />} onClick={onEdit} style={{ marginRight: 8 }} disabled={!current || current.clave === "CRED"} >Editar</Button>
         <Popconfirm title="¿Seguro que deseas eliminar?" onConfirm={onDelete}>
-          <Button icon={<DeleteOutlined />} danger style={{ marginRight: 8 }} 
-          disabled={!current || current.clave === "CRED"} hidden={!canDeletepaymentMethods}>
-            Eliminar</Button>
+          {canDelete && 
+            (<Button icon={<DeleteOutlined />} danger style={{ marginRight: 8 }} 
+            disabled={!current || current.clave === "CRED"}>
+              Eliminar
+            </Button>)}
         </Popconfirm>
         <Button icon={<ReloadOutlined />} onClick={() => fetchData(page)}>Actualizar</Button>
       </div>

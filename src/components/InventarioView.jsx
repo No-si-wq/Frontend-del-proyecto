@@ -1,22 +1,43 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
-  Table, Tabs, Space, Button, Input, message, Modal, Form, Select, InputNumber
+  Table, 
+  Tabs, 
+  Space, 
+  Button, 
+  Input, 
+  message,
+  Modal, 
+  Form, 
+  Select, 
+  InputNumber
 } from "antd";
 import {
-  PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, FileExcelOutlined, SearchOutlined, AppstoreOutlined
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined, 
+  ReloadOutlined, 
+  FileExcelOutlined, 
+  SearchOutlined, 
+  AppstoreOutlined
 } from "@ant-design/icons";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
 import { useInventario } from "../hooks/useInventario";
 import apiClient from "../api/axios";
+import { AuthContext } from "../hooks/AuthProvider";
 
 const { TabPane } = Tabs;
 
 const InventarioView = ({ storeId }) => {
   const {
-    productos, categorias = [], taxOptions = [], loading, fetchProductos
+    productos, 
+    categorias = [], 
+    taxOptions = [], 
+    loading, 
+    fetchProductos
   } = useInventario(storeId);
 
+  const { auth } = useContext(AuthContext);
   const [busqueda, setBusqueda] = useState("");
   const [productosFiltrados, setProductosFiltrados] = useState([]);
   const [selectedProducto, setSelectedProducto] = useState(null);
@@ -24,6 +45,7 @@ const InventarioView = ({ storeId }) => {
   const [editMode, setEditMode] = useState(false);
   const [precioFinal, setPrecioFinal] = useState(0);
   const [costoFinal, setCostoFinal] = useState(0);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -195,9 +217,10 @@ const InventarioView = ({ storeId }) => {
             <Button onClick={openEditModal} icon={<EditOutlined />} disabled={!selectedProducto}>
               Editar
             </Button>
-            <Button onClick={handleDelete} icon={<DeleteOutlined />} disabled={!selectedProducto}>
-              Eliminar
-            </Button>
+            {canDelete && 
+              (<Button onClick={handleDelete} icon={<DeleteOutlined />} disabled={!selectedProducto}>
+                Eliminar
+              </Button>)}
             <Button onClick={fetchProductos} icon={<ReloadOutlined />}>Actualizar</Button>
             <Button onClick={exportToExcel} icon={<FileExcelOutlined />}>Excel</Button>
             <Input

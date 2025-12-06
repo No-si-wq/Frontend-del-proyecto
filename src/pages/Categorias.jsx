@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Table,
   Button,
@@ -23,18 +23,19 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/axios";
-import { usePermissions } from "../hooks/Permisos";
+import { AuthContext } from "../hooks/AuthProvider";
 
 const { TabPane } = Tabs;
 
 const Categorias = () => {
+  const { auth } = useContext(AuthContext);
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
-  const { canDeleteCategorias } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -132,10 +133,13 @@ const Categorias = () => {
             </Button>
           </Tooltip>
           <Tooltip title="Eliminar categoría">
-            <Button danger icon={<DeleteOutlined />} disabled={!selectedCategoria}
-            hidden={!canDeleteCategorias} onClick={onDelete}>
-              Eliminar
-            </Button>
+            {canDelete && (
+              <Button danger icon={<DeleteOutlined />} 
+                disabled={!selectedCategoria} 
+                onClick={onDelete}>
+                Eliminar
+              </Button>
+            )}
           </Tooltip>
           <Tooltip title="Actualizar">
             <Button icon={<ReloadOutlined />} onClick={fetchCategorias}>

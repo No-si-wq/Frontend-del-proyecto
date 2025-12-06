@@ -5,20 +5,18 @@ import apiClient from "../api/axios";
 export const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-
   const [auth, setAuth] = useState({
     token: null,
     roleId: null,
     companyId: null,
-    permissions: [],
     username: null,
+    permissions: [],
   });
 
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem("token");
-
     if (!token) {
       setIsAuthReady(true);
       return;
@@ -35,8 +33,8 @@ const AuthProvider = ({ children }) => {
           token: null,
           roleId: null,
           companyId: null,
-          permissions: [],
           username: null,
+          permissions: [],
         });
         setIsAuthReady(true);
         return;
@@ -48,7 +46,9 @@ const AuthProvider = ({ children }) => {
             headers: { Authorization: `Bearer ${token}` },
           });
 
-          const permissions = res.data.map(p => p.key ?? p.permission?.key);
+          const permissions = res.data.map(
+            (p) => p.key ?? p.permission?.key
+          );
 
           setAuth({
             token,
@@ -59,7 +59,7 @@ const AuthProvider = ({ children }) => {
           });
 
         } catch (error) {
-          console.error("Error obteniendo permisos:", error);
+          console.error("Error obteniendo permisos iniciales:", error);
 
           setAuth({
             token,
@@ -77,15 +77,15 @@ const AuthProvider = ({ children }) => {
       fetchPermissions();
 
     } catch (error) {
-      console.error("Token inválido:", error);
+      console.error("Token inválido al cargar:", error);
       sessionStorage.removeItem("token");
 
       setAuth({
         token: null,
         roleId: null,
         companyId: null,
-        permissions: [],
         username: null,
+        permissions: [],
       });
 
       setIsAuthReady(true);
@@ -95,9 +95,9 @@ const AuthProvider = ({ children }) => {
   const handleLogin = async ({ token, username, roleId, permissions }) => {
     try {
       const decoded = jwtDecode(token);
-      const { roleId: roleFromJwt, companyId, exp } = decoded;
+      const { roleId: jwtRoleId, companyId, exp } = decoded;
 
-      const finalRoleId = roleId || roleFromJwt;
+      const finalRoleId = roleId || jwtRoleId;
 
       if (Date.now() >= exp * 1000) {
         console.warn("Token expirado al iniciar sesión");
@@ -109,16 +109,18 @@ const AuthProvider = ({ children }) => {
 
       let finalPermissions = permissions;
 
-      if (!permissions || permissions.length === 0) {
+      if (!finalPermissions || finalPermissions.length === 0) {
         try {
           const res = await apiClient.get(`/api/roles/${finalRoleId}/permisos`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
-          finalPermissions = res.data.map(p => p.key ?? p.permission?.key);
+          finalPermissions = res.data.map(
+            (p) => p.key ?? p.permission?.key
+          );
 
         } catch (err) {
-          console.error("Error obteniendo permisos:", err);
+          console.error("Error obteniendo permisos al iniciar sesión:", err);
           finalPermissions = [];
         }
       }
@@ -132,15 +134,15 @@ const AuthProvider = ({ children }) => {
       });
 
     } catch (error) {
-      console.error("Error decodificando token:", error);
+      console.error("Error decodificando token al iniciar sesión:", error);
       sessionStorage.removeItem("token");
 
       setAuth({
         token: null,
         roleId: null,
         companyId: null,
-        permissions: [],
         username: null,
+        permissions: [],
       });
     }
   };
@@ -151,8 +153,8 @@ const AuthProvider = ({ children }) => {
       token: null,
       roleId: null,
       companyId: null,
-      permissions: [],
       username: null,
+      permissions: [],
     });
   };
 

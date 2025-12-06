@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import {
   Tree,
   Button,
@@ -18,6 +18,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { fetchStoreById, updateStore, deleteStore } from "../api/storesAPI";
+import { AuthContext } from "../hooks/AuthProvider";
 import apiClient from "../api/axios";
 
 const { Title } = Typography;
@@ -31,6 +32,8 @@ const SidebarMenu = ({
   onReload,
 }) => {
   const navigate = useNavigate();
+  const { auth } = useContext(AuthContext);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const [modalVisible, setModalVisible] = useState(false);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -172,17 +175,17 @@ const SidebarMenu = ({
             title="Editar tienda"
             disabled={!isStoreKeySelected}
           />
-          <Button
+          {canDelete &&
+          (<Button
             icon={<DeleteOutlined />}
             danger
             onClick={handleDelete}
             title="Eliminar tienda"
             disabled={!isStoreKeySelected}
-          />
+          />)}
         </Space>
       </Space>
 
-      {/* Modal único para crear y editar */}
       <Modal
         open={modalVisible}
         title={editMode ? "Editar tienda" : "Crear nueva tienda"}
@@ -211,7 +214,6 @@ const SidebarMenu = ({
         </Form>
       </Modal>
 
-      {/* Confirmación de eliminación */}
       <Modal
         open={deleteConfirmVisible}
         title="Eliminar tienda"

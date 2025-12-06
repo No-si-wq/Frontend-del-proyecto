@@ -1,7 +1,5 @@
 import { useContext, useMemo } from "react";
 import { AuthContext } from "./AuthProvider";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCashRegister } from '@fortawesome/free-solid-svg-icons';
 
 import {
   DollarOutlined,
@@ -60,13 +58,9 @@ const rawModules = [
       { key: "usuarios", title: "Usuarios", icon: <UserOutlined />, path: "/usuarios" },
       { key: "permisos", title: "Crear Permisos", icon: <UserOutlined />, path: "/permisos" },
       { key: "formas-pago", title: "Formas de pago", icon: <CreditCardOutlined />, path: "/formas-pago" },
-      { key: "dispositivos", title: "Dispositivos", icon: <DesktopOutlined />, path: "/dispositivos" },
-      { key: "lineas", title: "Líneas", icon: <ApartmentOutlined />, path: "/lineas" },
-      { key: "departamentos", title: "Departamentos", icon: <TagsOutlined />, path: "/departamentos" },
       { key: "categorias", title: "Categorías", icon: <FileOutlined />, path: "/categorias" },
       { key: "monedas", title: "Monedas", icon: <GlobalOutlined />, path: "/monedas" },
       { key: "impuestos", title: "Esquema de Impuestos", icon: <FileTextOutlined />, path: "/impuestos" },
-      { key: "cajas", title: "Cajas Registradoras", icon: <FontAwesomeIcon icon={faCashRegister} />, path: "/cajas" }
     ]
   },
   {

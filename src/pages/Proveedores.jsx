@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   Table,
   Button,
@@ -22,20 +22,21 @@ import {
   SettingOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { usePermissions } from "../hooks/Permisos";
+import { AuthContext } from "../hooks/AuthProvider";
 import apiClient from '../api/axios';
 
 const { TabPane } = Tabs;
 
 const Proveedores = () => {
   const navigate = useNavigate();
+  const { auth } = useContext(AuthContext);
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProveedor, setSelectedProveedor] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
-  const { canDeleteProveedores } = usePermissions();
 
   useEffect(() => {
     fetchProveedores();
@@ -141,10 +142,11 @@ const Proveedores = () => {
             </Button>
           </Tooltip>
           <Tooltip title="Eliminar proveedor">
-            <Button danger icon={<DeleteOutlined />} disabled={!selectedProveedor} 
-            hidden={!canDeleteProveedores} onClick={onDelete}>
-              Eliminar
-            </Button>
+            {canDelete && 
+              (<Button danger icon={<DeleteOutlined />} disabled={!selectedProveedor} 
+              onClick={onDelete}>
+                Eliminar
+              </Button>)}
           </Tooltip>
           <Tooltip title="Actualizar">
             <Button icon={<ReloadOutlined />} onClick={fetchProveedores}>
