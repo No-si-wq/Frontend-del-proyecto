@@ -25,8 +25,8 @@ import KardexProductos from './pages/Kardex';
 import PagosClientes from './pages/pagosClientes';
 import BackupButton from './pages/BackupButton';
 import RestoreButton from './pages/RestoreButton';
-import ScheduleBackup from './pages/scheduleButton';
 import Permisos from './pages/Permissions';
+import ScheduledBackups from './pages/ScheduleBackups';
 
 function App() {
 
@@ -54,8 +54,8 @@ function App() {
           <Route path='/pagos-cliente' element={<PrivateRoute><PagosClientes/></PrivateRoute>} />
           <Route path='/backup' element={<PrivateRoute><BackupButton/></PrivateRoute>} />
           <Route path='/restore' element={<PrivateRoute><RestoreButton/></PrivateRoute>} />
-          <Route path='/schedule' element={<PrivateRoute><ScheduleBackup/></PrivateRoute>} />
           <Route path='/permisos' element={<PrivateRoute><Permisos/></PrivateRoute>} />
+          <Route path='/scheduled-backups' element={<PrivateRoute><ScheduledBackups/></PrivateRoute>} />
           {/* Default route */}
           <Route 
             path="/home" 

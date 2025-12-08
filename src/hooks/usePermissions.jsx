@@ -88,7 +88,7 @@ const rawModules = [
     submenu: [
       { key: "backup", title: "Generacion de Respaldos", icon: <SaveOutlined />, path: "/backup" },
       { key: "restore", title: "Restauracion de Respaldos", icon: <RollbackOutlined />, path: "/restore" },
-      { key: "schedule", title: "Programacion de respaldo automatico", icon: <CloudUploadOutlined />, path: "/schedule" },
+      { key: "scheduled-backups", title: "Jobs de respaldos programados", icon: <CloudUploadOutlined />, path: "/scheduled-backups" }
     ]
   },
 ];

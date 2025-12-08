@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Upload,
   Button,
   message,
   Input,
-  Checkbox,
   Form,
   Modal,
   Typography,
+  Progress,
 } from "antd";
 import {
   UploadOutlined,
@@ -17,6 +16,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/axios";
+import { io } from "socket.io-client";
 
 const { Title } = Typography;
 
@@ -24,9 +24,20 @@ const RestoreButton = () => {
   const [file, setFile] = useState(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
-    const handleFileSelect = async () => {
+    useEffect(() => {
+    const socket = io();
+    socket.on("backup-progress", (data) => {
+      if (data.total) setProgress(Math.floor((data.bytes / data.total) * 100));
+      else setProgress(0);
+    });
+
+    return () => socket.disconnect();
+  }, []);
+
+  const handleFileSelect = async () => {
     try {
       const filePath = await window.electronAPI.invoke("select-restore-file");
       if (!filePath) return;
@@ -49,6 +60,8 @@ const RestoreButton = () => {
 
     try {
       setLoading(true);
+      setProgress(0);
+
       const verifyRes = await apiClient.post("/api/respaldo/restore", {
         filePath: file.path,
         password,
@@ -75,6 +88,7 @@ const RestoreButton = () => {
             message.success("Restauración completada correctamente");
             setFile(null);
             form.resetFields();
+            setProgress(100);
           } catch (err) {
             console.error(err);
             message.error("Error al restaurar respaldo");
@@ -130,8 +144,17 @@ const RestoreButton = () => {
       </Form.Item>
 
         <Form.Item name="password" label="Contraseña (si aplica)">
-          <Input.Password prefix={<LockOutlined />} placeholder="Contraseña del respaldo"/>
+          <Input.Password prefix={<LockOutlined />} 
+          placeholder="Contraseña del respaldo"
+          disabled={loading}
+          />
         </Form.Item>
+
+        {loading && (
+          <Form.Item>
+            <Progress percent={progress} status="active" />
+          </Form.Item>
+        )}
 
         <Form.Item style={{ textAlign: "right" }}>
           <Button type="primary" icon={<ReloadOutlined />} onClick={handleRestore} 
