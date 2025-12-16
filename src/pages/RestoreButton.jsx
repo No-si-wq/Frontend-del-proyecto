@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Button,
   message,
@@ -26,14 +26,6 @@ const RestoreButton = () => {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const handler = (_, percent) => {setProgress(percent)};
-
-    window.electronAPI.onRestoreProgress(handler);
-
-    return () => {window.electronAPI.removeRestoreProgressListener(handler)};
-  }, []);
 
   const handleFileSelect = async () => {
     try {
