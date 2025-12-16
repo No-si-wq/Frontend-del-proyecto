@@ -114,10 +114,6 @@ const Login = () => {
             </Button>
           </Form.Item>
         </Form>
-
-        <div style={{ marginTop: 16, textAlign: 'center' }}>
-          ¿No tienes un usuario? <Link to="/register">Regístralo aquí</Link>
-        </div>
       </Card>
     </div>
   );
