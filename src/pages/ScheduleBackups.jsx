@@ -212,12 +212,6 @@ const ScheduledBackups = () => {
 
   const columns = [
     {
-      title: "Job ID",
-      dataIndex: "jobId",
-      key: "jobId",
-      ellipsis: true,
-    },
-    {
       title: "Expresión CRON",
       dataIndex: "schedule",
       key: "schedule",
