@@ -2,7 +2,6 @@ import React from 'react';
 import '@ant-design/v5-patch-for-react-19';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
 import Home from './pages/Home';
 import Compras from './pages/Compras';
 import Ventas from './pages/Ventas';
@@ -34,7 +33,6 @@ function App() {
     <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/ventas" element={<PrivateRoute><Ventas /></PrivateRoute>} />
           <Route path="/compras" element={<PrivateRoute><Compras /></PrivateRoute>} />
           <Route path="/inventarioConsulta" element={<PrivateRoute><InventarioConsulta /></PrivateRoute>} />
