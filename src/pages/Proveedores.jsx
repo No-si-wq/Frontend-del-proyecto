@@ -35,7 +35,7 @@ const Proveedores = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProveedor, setSelectedProveedor] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?.user?.permissions?.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -45,9 +45,12 @@ const Proveedores = () => {
   const fetchProveedores = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/api/proveedores');
+      const res = await apiClient.get('/api/proveedores', {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
       setProveedores(res.data); 
-    } catch {
+    } catch (err) {
+      console.error(err);
       message.error("Error al cargar proveedores");
     }
     setLoading(false);
@@ -77,11 +80,14 @@ const Proveedores = () => {
       cancelText: "Cancelar",
       onOk: async () => {
         try {
-          await apiClient.delete(`/api/proveedores/${selectedProveedor.id}`);
+          await apiClient.delete(`/api/proveedores/${selectedProveedor.id}`, {
+            headers: { Authorization: `Bearer ${auth.token}` }
+          });
           message.success("Proveedor eliminado");
           setSelectedProveedor(null);
           fetchProveedores();
-        } catch {
+        } catch (err) {
+          console.error(err);
           message.error("No se pudo eliminar el proveedor");
         }
       },
@@ -89,28 +95,26 @@ const Proveedores = () => {
   };
 
   const onFinish = async (values) => {
-    if (editMode && selectedProveedor) {
-      // Editar
-      try {
-        await apiClient.put(`/api/proveedores/${selectedProveedor.id}`, values);
+    try {
+      if (editMode && selectedProveedor) {
+        await apiClient.put(`/api/proveedores/${selectedProveedor.id}`, values, {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        });
         message.success("Proveedor actualizado");
-      } catch {
-        message.error("No se pudo actualizar el proveedor");
-      }
-    } else {
-      // Crear
-      try {
-        await apiClient.post('/api/proveedores', values);
+      } else {
+        await apiClient.post('/api/proveedores', values, {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        });
         message.success("Proveedor añadido");
-      } catch {
-        message.error("No se pudo añadir el proveedor");
       }
+      setModalVisible(false);
+      form.resetFields();
+      setSelectedProveedor(null);
+      fetchProveedores();
+    } catch (err) {
+      console.error(err);
+      message.error("Error al guardar proveedor");
     }
-
-    setModalVisible(false);
-    form.resetFields();
-    setSelectedProveedor(null);
-    fetchProveedores();
   };
 
   const columns = [
@@ -127,31 +131,22 @@ const Proveedores = () => {
       <TabPane tab={<span><AppstoreOutlined /> Archivo</span>} key="1">
         <Space wrap>
           <Tooltip title="Ir al inicio">
-            <Button icon={<HomeOutlined />} onClick={() => navigate("/home")}>
-              Inicio
-            </Button>
+            <Button icon={<HomeOutlined />} onClick={() => navigate("/home")}>Inicio</Button>
           </Tooltip>
           <Tooltip title="Agregar proveedor">
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-              Añadir
-            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Añadir</Button>
           </Tooltip>
           <Tooltip title="Editar proveedor">
-            <Button icon={<EditOutlined />} disabled={!selectedProveedor} onClick={openEditModal}>
-              Editar
-            </Button>
+            <Button icon={<EditOutlined />} disabled={!selectedProveedor} onClick={openEditModal}>Editar</Button>
           </Tooltip>
           <Tooltip title="Eliminar proveedor">
             {canDelete && 
-              (<Button danger icon={<DeleteOutlined />} disabled={!selectedProveedor} 
-              onClick={onDelete}>
+              <Button danger icon={<DeleteOutlined />} disabled={!selectedProveedor} onClick={onDelete}>
                 Eliminar
-              </Button>)}
+              </Button>}
           </Tooltip>
           <Tooltip title="Actualizar">
-            <Button icon={<ReloadOutlined />} onClick={fetchProveedores}>
-              Actualizar
-            </Button>
+            <Button icon={<ReloadOutlined />} onClick={fetchProveedores}>Actualizar</Button>
           </Tooltip>
         </Space>
       </TabPane>
@@ -174,9 +169,7 @@ const Proveedores = () => {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
-          onRow={(record) => ({
-            onClick: () => setSelectedProveedor(record),
-          })}
+          onRow={(record) => ({ onClick: () => setSelectedProveedor(record) })}
           rowClassName={(record) => (selectedProveedor?.id === record.id ? "ant-table-row-selected" : "")}
           style={{ background: "white", borderRadius: 4 }}
         />
@@ -185,11 +178,7 @@ const Proveedores = () => {
       <Modal
         title={editMode ? "Editar Proveedor" : "Añadir Proveedor"}
         open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          form.resetFields();
-          setSelectedProveedor(null);
-        }}
+        onCancel={() => { setModalVisible(false); form.resetFields(); setSelectedProveedor(null); }}
         onOk={() => form.submit()}
         destroyOnClose
       >

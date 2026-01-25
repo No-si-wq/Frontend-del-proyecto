@@ -35,7 +35,7 @@ const Clientes = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?.user?.permissions?.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -44,7 +44,6 @@ const Clientes = () => {
   const [resetModalVisible, setResetModalVisible] = useState(false);
   const [resetDays, setResetDays] = useState("");
 
-
   useEffect(() => {
     fetchClientes();
   }, []);
@@ -52,7 +51,9 @@ const Clientes = () => {
   const fetchClientes = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get("/api/clientes");
+      const res = await apiClient.get("/api/clientes", {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
       setClientes(res.data);
     } catch (error) {
       console.error("Error al cargar clientes", error);
@@ -105,79 +106,70 @@ const Clientes = () => {
           creditDays: Number(values.creditDays) || 0,
         };
       }
+
+      const config = { headers: { Authorization: `Bearer ${auth.token}` } };
+
       if (editMode) {
-        await apiClient.put(`/api/clientes/${selectedCliente.id}`, payload);
+        await apiClient.put(`/api/clientes/${selectedCliente.id}`, payload, config);
         message.success("Cliente actualizado exitosamente");
       } else {
-        await apiClient.post("/api/clientes", payload);
+        await apiClient.post("/api/clientes", payload, config);
         message.success("Cliente añadido exitosamente");
       }
       setModalVisible(false);
       fetchClientes();
     } catch (error) {
       console.error("Error al guardar cliente:", error);
-      message.error("Error al guardar cliente");
+      message.error(error.response?.data?.error || "Error al guardar cliente");
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await apiClient.delete(`/api/clientes/${id}`);
+      await apiClient.delete(`/api/clientes/${id}`, {
+        headers: { Authorization: `Bearer ${auth.token}` },
+      });
       message.success("Cliente eliminado exitosamente");
       fetchClientes();
     } catch (error) {
       console.error("Error al eliminar cliente:", error);
-      message.error("Error al eliminar cliente");
+      message.error(error.response?.data?.error || "Error al eliminar cliente");
     }
   };
 
   const handleRenewCredit = async () => {
-    if (!selectedCliente) {
-      message.warning("Selecciona un cliente primero");
-      return;
-    }
-
-    if (!renewDays || isNaN(renewDays) || renewDays <= 0) {
-      message.warning("Ingresa una cantidad válida de días");
-      return;
-    }
+    if (!selectedCliente) return message.warning("Selecciona un cliente primero");
+    if (!renewDays || isNaN(renewDays) || renewDays <= 0) return message.warning("Ingresa una cantidad válida de días");
 
     try {
       await apiClient.patch(`/api/clientes/${selectedCliente.id}/renew-credit`, {
         extraDays: parseInt(renewDays),
-      });
+      }, { headers: { Authorization: `Bearer ${auth.token}` } });
       message.success(`Crédito renovado por ${renewDays} días adicionales`);
       setRenewModalVisible(false);
       setRenewDays("");
       fetchClientes();
     } catch (error) {
       console.error("Error al renovar crédito:", error);
-      message.error("No se pudo renovar el crédito");
+      message.error(error.response?.data?.error || "No se pudo renovar el crédito");
     }
   };
 
   const handleResetCredit = async () => {
-    if (!selectedCliente) {
-      message.warning("Selecciona un cliente primero");
-      return;
-    }
-
-    if (!resetDays || isNaN(resetDays) || resetDays <= 0) {
-      message.warning("Ingresa una cantidad válida de días");
-      return;
-    }
+    if (!selectedCliente) return message.warning("Selecciona un cliente primero");
+    if (!resetDays || isNaN(resetDays) || resetDays <= 0) return message.warning("Ingresa una cantidad válida de días");
 
     try {
       await apiClient.patch(`/api/clientes/${selectedCliente.id}/reset-credit-days`, {
         newCreditDays: parseInt(resetDays),
-      });
+      }, { headers: { Authorization: `Bearer ${auth.token}` } });
       message.success(`Crédito restablecido a ${resetDays} días`);
       setResetModalVisible(false);
       setResetDays("");
       fetchClientes();
     } catch (error) {
       console.error("Error al restablecer crédito:", error);
-      message.error("No se pudo restablecer el crédito");
+      message.error(error.response?.data?.error || "No se pudo restablecer el crédito");
     }
   };
 
@@ -198,70 +190,35 @@ const Clientes = () => {
       <TabPane tab={<span><AppstoreOutlined /> Archivo</span>} key="1">
         <Space wrap>
           <Tooltip title="Ir al inicio">
-            <Button icon={<HomeOutlined />} onClick={() => navigate("/home")}>
-              Inicio
-            </Button>
+            <Button icon={<HomeOutlined />} onClick={() => navigate("/home")}>Inicio</Button>
           </Tooltip>
-
           <Tooltip title="Agregar cliente">
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-              Añadir
-            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Añadir</Button>
           </Tooltip>
-
           <Tooltip title="Editar cliente">
-            <Button icon={<EditOutlined />} disabled={!selectedCliente} onClick={openEditModal}>
-              Editar
-            </Button>
+            <Button icon={<EditOutlined />} disabled={!selectedCliente} onClick={openEditModal}>Editar</Button>
           </Tooltip>
-
           <Tooltip title="Eliminar cliente">
             {canDelete && (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                disabled={!selectedCliente}
-                onClick={() => handleDelete(selectedCliente.id)}
-              >
-                Eliminar
-              </Button>
+              <Button danger icon={<DeleteOutlined />} disabled={!selectedCliente} onClick={() => handleDelete(selectedCliente.id)}>Eliminar</Button>
             )}
           </Tooltip>
-
           <Tooltip title="Renovar días de crédito">
-            <Button
-              icon={<SyncOutlined />}
-              disabled={!selectedCliente}
-              onClick={() => setRenewModalVisible(true)}
-            >
-              Renovar crédito
-            </Button>
+            <Button icon={<SyncOutlined />} disabled={!selectedCliente} onClick={() => setRenewModalVisible(true)}>Renovar crédito</Button>
           </Tooltip>
-
           <Tooltip title="Restablecer días de crédito">
-            <Button
-              icon={<ReloadOutlined />}
-              disabled={!selectedCliente}
-              onClick={() => setResetModalVisible(true)}
-            >
-              Restablecer crédito
-            </Button>
+            <Button icon={<ReloadOutlined />} disabled={!selectedCliente} onClick={() => setResetModalVisible(true)}>Restablecer crédito</Button>
           </Tooltip>
-
           <Tooltip title="Actualizar">
-            <Button icon={<ReloadOutlined />} onClick={fetchClientes}>
-              Actualizar
-            </Button>
+            <Button icon={<ReloadOutlined />} onClick={fetchClientes}>Actualizar</Button>
           </Tooltip>
         </Space>
       </TabPane>
-
       <TabPane tab={<span><TeamOutlined /> Catálogos</span>} key="2">
         <Space>
           <Button icon={<SearchOutlined />}>Buscar</Button>
         </Space>
       </TabPane>
-
       <TabPane tab={<span><SettingOutlined /> Configuración</span>} key="3">
         <Space>
           <Button icon={<SettingOutlined />}>Opciones</Button>
@@ -271,23 +228,8 @@ const Clientes = () => {
   );
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(135deg, #f0f5ff 0%, #fffbe6 100%)",
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          background: "#f9f9f9",
-          borderRadius: 8,
-          padding: 16,
-          boxShadow: "0 2px 8px #dbeafe50",
-        }}
-      >
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0f5ff 0%, #fffbe6 100%)", padding: 24 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto", background: "#f9f9f9", borderRadius: 8, padding: 16, boxShadow: "0 2px 8px #dbeafe50" }}>
         {ribbonActions}
         <Table
           columns={columns}
@@ -295,12 +237,8 @@ const Clientes = () => {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
-          onRow={(record) => ({
-            onClick: () => setSelectedCliente(record),
-          })}
-          rowClassName={(record) =>
-            selectedCliente?.id === record.id ? "ant-table-row-selected" : ""
-          }
+          onRow={(record) => ({ onClick: () => setSelectedCliente(record) })}
+          rowClassName={(record) => selectedCliente?.id === record.id ? "ant-table-row-selected" : ""}
           style={{ background: "white", borderRadius: 4 }}
         />
       </div>
@@ -308,11 +246,7 @@ const Clientes = () => {
       <Modal
         title={editMode ? "Editar Cliente" : "Añadir Cliente"}
         open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          form.resetFields();
-          setSelectedCliente(null);
-        }}
+        onCancel={() => { setModalVisible(false); form.resetFields(); setSelectedCliente(null); }}
         onOk={() => form.submit()}
         destroyOnClose
       >
@@ -347,38 +281,23 @@ const Clientes = () => {
       <Modal
         title={`Renovar crédito de ${selectedCliente?.name || ""}`}
         open={renewModalVisible}
-        onCancel={() => {
-          setRenewModalVisible(false);
-          setRenewDays("");
-        }}
+        onCancel={() => { setRenewModalVisible(false); setRenewDays(""); }}
         onOk={handleRenewCredit}
         okText="Renovar"
       >
         <p>Ingresa los días adicionales que deseas agregar al crédito actual.</p>
-        <Input
-          type="number"
-          placeholder="Ejemplo: 15"
-          value={renewDays}
-          onChange={(e) => setRenewDays(e.target.value)}
-        />
+        <Input type="number" placeholder="Ejemplo: 15" value={renewDays} onChange={(e) => setRenewDays(e.target.value)} />
       </Modal>
+
       <Modal
         title={`Restablecer crédito de ${selectedCliente?.name || ""}`}
         open={resetModalVisible}
-        onCancel={() => {
-          setResetModalVisible(false);
-          setResetDays("");
-        }}
+        onCancel={() => { setResetModalVisible(false); setResetDays(""); }}
         onOk={handleResetCredit}
         okText="Restablecer"
       >
         <p>Ingresa el nuevo valor de días de crédito para restablecer el límite.</p>
-        <Input
-          type="number"
-          placeholder="Ejemplo: 30"
-          value={resetDays}
-          onChange={(e) => setResetDays(e.target.value)}
-        />
+        <Input type="number" placeholder="Ejemplo: 30" value={resetDays} onChange={(e) => setResetDays(e.target.value)} />
       </Modal>
     </div>
   );

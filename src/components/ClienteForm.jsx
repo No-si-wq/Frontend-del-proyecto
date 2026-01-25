@@ -40,10 +40,10 @@ const ClienteForm = ({ visible, onCreate, onCancel, confirmLoading }) => {
           <Input type="number" />
         </Form.Item>
         <Form.Item name="creditBalance" label="Saldo de Crédito">
-          <Input type="number" />
+          <Input type="number" disabled />
         </Form.Item>
         <Form.Item name="creditDays" label="Días de Crédito">
-          <Input type="number" />
+          <Input type="number"/>
         </Form.Item>
       </Form>
     </Modal>

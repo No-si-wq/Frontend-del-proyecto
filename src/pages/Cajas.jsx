@@ -33,7 +33,7 @@ const Cajas = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?user?.permissions?.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const navigate = useNavigate();
 

@@ -12,7 +12,6 @@ import {
   Tabs,
   Tooltip,
 } from "antd";
-
 import {
   HomeOutlined,
   PlusOutlined,
@@ -23,7 +22,6 @@ import {
   TeamOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-
 import { useNavigate } from "react-router-dom";
 import apiClient from "../api/axios";
 import { AuthContext } from "../hooks/AuthProvider";
@@ -42,7 +40,7 @@ const PermissionsPage = () => {
 
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedPermission, setSelectedPermission] = useState(null);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?.user?.permissions?.includes("PERMISSION_DELETE_ROLE");
 
   const [modalRoleVisible, setModalRoleVisible] = useState(false);
   const [modalPermVisible, setModalPermVisible] = useState(false);
@@ -90,10 +88,7 @@ const PermissionsPage = () => {
 
   const handleSaveRole = async (values) => {
     try {
-      const payload = {
-        name: values.name,
-        description: values.description || "",
-      };
+      const payload = { name: values.name, description: values.description || "" };
 
       if (editingRole) {
         await apiClient.put(`/api/roles/${editingRole.id}`, payload, {
@@ -140,70 +135,18 @@ const PermissionsPage = () => {
     });
   };
 
-  const openPermissionsModal = (role) => {
-
-    form.setFieldsValue({
-      permissions: (role.permissions || []).map((p) => p.permission?.id ?? p.id),
-    });
-
-    Modal.confirm({
-      title: `Asignar permisos a "${role.name}"`,
-      okText: "Guardar",
-      cancelText: "Cancelar",
-      width: 600,
-      onOk: async () => {
-        try {
-          const values = await form.validateFields();
-          const permissionIds = values.permissions || [];
-
-          await apiClient.put(
-            `/api/permissions/role/${role.id}`,
-            { permissionIds },
-            { headers: { Authorization: `Bearer ${auth.token}` } }
-          );
-
-          const updated = await apiClient.get(
-            `/api/permissions/role/${role.id}`,
-            { headers: { Authorization: `Bearer ${auth.token}` } }
-          );
-          role.permissions = updated.data;
-
-          message.success("Permisos actualizados");
-          fetchRoles();
-        } catch (err) {
-          console.error(err);
-          message.error("Error al asignar permisos");
-        }
-      },
-      content: (
-      <Form form={form} layout="vertical">
-        <Form.Item name="permissions">
-          <Checkbox.Group style={{ display: "flex", flexDirection: "column" }}>
-            {permissions.map((p) => (
-              <Checkbox key={p.id} value={p.id}>
-                {p.key} - {p.description}
-              </Checkbox>
-            ))}
-          </Checkbox.Group>
-        </Form.Item>
-      </Form>
-      ),
-    });
-  };
-
   const handleCreatePermission = async (values) => {
     try {
       await apiClient.post("/api/permissions", values, {
         headers: { Authorization: `Bearer ${auth.token}` },
       });
-
       message.success("Permiso creado");
       formPerm.resetFields();
       setModalPermVisible(false);
       fetchPermissions();
     } catch (err) {
       console.error(err);
-      message.error("Error al crear permiso");
+      message.error(err.response?.data?.error || "Error al crear permiso");
     }
   };
 
@@ -224,9 +167,53 @@ const PermissionsPage = () => {
           fetchPermissions();
         } catch (err) {
           console.error(err);
-          message.error("Error al eliminar permiso");
+          message.error(err.response?.data?.error || "Error al eliminar permiso");
         }
       },
+    });
+  };
+
+  const openPermissionsModal = (role) => {
+    form.setFieldsValue({
+      permissions: role.permissions?.map((p) => p.permission?.id ?? p.id),
+    });
+
+    Modal.confirm({
+      title: `Asignar permisos a "${role.name}"`,
+      okText: "Guardar",
+      cancelText: "Cancelar",
+      width: 600,
+      onOk: async () => {
+        try {
+          const values = await form.validateFields();
+          const permissionIds = values.permissions || [];
+
+          await apiClient.put(
+            `/api/permissions/role/${role.id}`,
+            { permissionIds },
+            { headers: { Authorization: `Bearer ${auth.token}` } }
+          );
+
+          message.success("Permisos actualizados");
+          fetchRoles();
+        } catch (err) {
+          console.error(err);
+          message.error("Error al asignar permisos");
+        }
+      },
+      content: (
+        <Form form={form} layout="vertical">
+          <Form.Item name="permissions">
+            <Checkbox.Group style={{ display: "flex", flexDirection: "column" }}>
+              {permissions.map((p) => (
+                <Checkbox key={p.id} value={p.id}>
+                  {p.key} - {p.description}
+                </Checkbox>
+              ))}
+            </Checkbox.Group>
+          </Form.Item>
+        </Form>
+      ),
     });
   };
 
@@ -237,7 +224,7 @@ const PermissionsPage = () => {
     {
       title: "Permisos",
       render: (_, r) =>
-        r.permissions?.map(p => p.permission?.key ?? p.key).join(", "),
+        r.permissions?.map((p) => p.permission?.key ?? p.key).join(", "),
     },
   ];
 
@@ -251,11 +238,8 @@ const PermissionsPage = () => {
     <Tabs defaultActiveKey="1" type="card" style={{ marginBottom: 16 }}>
       <TabPane tab={<span><AppstoreOutlined /> Archivo</span>} key="1">
         <Space wrap>
-
           <Tooltip title="Ir al inicio">
-            <Button icon={<HomeOutlined />} onClick={() => navigate("/home")}>
-              Inicio
-            </Button>
+            <Button icon={<HomeOutlined />} onClick={() => navigate("/home")}>Inicio</Button>
           </Tooltip>
 
           <Tooltip title="Agregar rol">
@@ -297,7 +281,7 @@ const PermissionsPage = () => {
               >
                 Eliminar Rol
               </Button>
-              )}
+            )}
           </Tooltip>
 
           <Tooltip title="Asignar permisos">
@@ -321,7 +305,6 @@ const PermissionsPage = () => {
 
       <TabPane tab={<span><TeamOutlined /> Catálogo Permisos</span>} key="2">
         <Space wrap>
-
           <Tooltip title="Nuevo permiso">
             <Button
               type="primary"
@@ -372,7 +355,6 @@ const PermissionsPage = () => {
         }}
       >
         <Title level={3}>Gestión de Roles y Permisos</Title>
-
         {ribbon}
 
         <Tabs defaultActiveKey="roles">
@@ -383,9 +365,7 @@ const PermissionsPage = () => {
               rowKey="id"
               loading={loadingRoles}
               bordered
-              onRow={(record) => ({
-                onClick: () => setSelectedRole(record),
-              })}
+              onRow={(record) => ({ onClick: () => setSelectedRole(record) })}
               rowClassName={(record) =>
                 selectedRole?.id === record.id ? "ant-table-row-selected" : ""
               }
@@ -399,9 +379,7 @@ const PermissionsPage = () => {
               rowKey="id"
               loading={loadingPerms}
               bordered
-              onRow={(record) => ({
-                onClick: () => setSelectedPermission(record),
-              })}
+              onRow={(record) => ({ onClick: () => setSelectedPermission(record) })}
               rowClassName={(record) =>
                 selectedPermission?.id === record.id ? "ant-table-row-selected" : ""
               }
@@ -417,21 +395,14 @@ const PermissionsPage = () => {
         footer={null}
       >
         <Form form={formRole} layout="vertical" onFinish={handleSaveRole}>
-          <Form.Item
-            label="Nombre"
-            name="name"
-            rules={[{ required: true, message: "Ingresa el nombre del rol" }]}
-          >
+          <Form.Item label="Nombre" name="name" rules={[{ required: true, message: "Ingresa el nombre del rol" }]}>
             <Input />
           </Form.Item>
           <Form.Item label="Descripción" name="description">
             <Input />
           </Form.Item>
-
           <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Guardar
-            </Button>
+            <Button type="primary" htmlType="submit" block>Guardar</Button>
           </Form.Item>
         </Form>
       </Modal>
@@ -443,22 +414,14 @@ const PermissionsPage = () => {
         footer={null}
       >
         <Form form={formPerm} layout="vertical" onFinish={handleCreatePermission}>
-          <Form.Item
-            label="Key"
-            name="key"
-            rules={[{ required: true, message: "Ingresa la clave del permiso" }]}
-          >
+          <Form.Item label="Key" name="key" rules={[{ required: true, message: "Ingresa la clave del permiso" }]}>
             <Input />
           </Form.Item>
-
           <Form.Item label="Descripción" name="description">
             <Input />
           </Form.Item>
-
           <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              Crear
-            </Button>
+            <Button type="primary" htmlType="submit" block>Crear</Button>
           </Form.Item>
         </Form>
       </Modal>

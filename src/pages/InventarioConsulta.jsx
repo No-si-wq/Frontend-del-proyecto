@@ -34,23 +34,25 @@ const InventarioConsulta = () => {
   const [storeId, setStoreId] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [tiendasCache, setTiendasCache] = useState([]);
+
   const productosFiltrados = useMemo(() => {
     const term = busqueda.trim().toLowerCase();
     return term
       ? productos.filter((p) =>
-          p.name?.toLowerCase().includes(term)
+          p.name?.toLowerCase().includes(term) ||
+          p.sku?.toLowerCase().includes(term)
         )
       : productos;
   }, [busqueda, productos]);
 
   useEffect(() => {
-    fetchTiendas();
-  }, []);
+    if (!tiendasCache.length) fetchTiendas();
+    else setTiendas(tiendasCache);
+  }, [tiendasCache]);
 
   useEffect(() => {
-    if (storeId !== null) {
-      fetchProductos(storeId);
-    }
+    if (storeId !== null) fetchProductos(storeId);
   }, [storeId]);
 
   const fetchTiendas = async () => {
@@ -58,6 +60,7 @@ const InventarioConsulta = () => {
       const res = await apiClient.get("/api/stores");
       const data = Array.isArray(res.data) ? res.data : [];
       setTiendas(data);
+      setTiendasCache(data);
       if (data.length > 0 && storeId === null) setStoreId(data[0].id);
     } catch (error) {
       console.error("Error al cargar tiendas:", error);
@@ -108,7 +111,6 @@ const InventarioConsulta = () => {
 
   const renderPrice = (value) =>
     `L. ${!isNaN(Number(value)) ? Number(value).toFixed(2) : "0.00"}`;
-
   const renderTax = (tax) =>
     tax?.percent != null ? `(${(tax.percent * 100).toFixed(2)}%)` : "Sin impuesto";
 

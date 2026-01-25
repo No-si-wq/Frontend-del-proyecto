@@ -36,7 +36,7 @@ const Usuarios = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?.user?.permissions?.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const navigate = useNavigate();
 
@@ -51,8 +51,9 @@ const Usuarios = () => {
       setUsuarios(normalizados);
     } catch {
       message.error("Error al cargar usuarios");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchRoles = async () => {
@@ -99,7 +100,6 @@ const Usuarios = () => {
 
   const openEditModal = () => {
     if (!selectedUsuario) return;
-
     setEditMode(true);
 
     form.setFieldsValue({
@@ -126,10 +126,7 @@ const Usuarios = () => {
       }
 
       if (editMode && selectedUsuario) {
-        await apiClient.put(
-          `/api/usuarios/${selectedUsuario.id}`,
-          dataToSend
-        );
+        await apiClient.put(`/api/usuarios/${selectedUsuario.id}`, dataToSend);
         message.success("Usuario actualizado exitosamente");
       } else {
         await apiClient.post("/api/usuarios", dataToSend);
@@ -141,8 +138,7 @@ const Usuarios = () => {
       form.resetFields();
       setSelectedUsuario(null);
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.error || "Error al guardar el usuario";
+      const errorMessage = err.response?.data?.error || "Error al guardar el usuario";
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -167,18 +163,9 @@ const Usuarios = () => {
   ];
 
   const ribbonActions = (
-    <Tabs
-      defaultActiveKey="1"
-      type="card"
-      style={{ marginBottom: 24 }}
-    >
+    <Tabs defaultActiveKey="1" type="card" style={{ marginBottom: 24 }}>
       <TabPane
-        tab={
-          <span>
-            <UserOutlined />
-            Archivo
-          </span>
-        }
+        tab={<span><UserOutlined />Archivo</span>}
         key="1"
       >
         <Space>
@@ -193,36 +180,24 @@ const Usuarios = () => {
           </Tooltip>
 
           <Tooltip title="Agregar usuario">
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={openCreateModal}
-            >
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
               Añadir
             </Button>
           </Tooltip>
 
           <Tooltip title="Editar usuario">
-            <Button
-              icon={<EditOutlined />}
-              disabled={!selectedUsuario}
-              onClick={openEditModal}
-            >
+            <Button icon={<EditOutlined />} disabled={!selectedUsuario} onClick={openEditModal}>
               Editar
             </Button>
           </Tooltip>
 
-          <Tooltip title="Eliminar usuario">
-            {canDelete && 
-              (<Button
-                danger
-                icon={<DeleteOutlined />}
-                disabled={!selectedUsuario}
-                onClick={onDelete}
-              >
+          {canDelete && (
+            <Tooltip title="Eliminar usuario">
+              <Button danger icon={<DeleteOutlined />} disabled={!selectedUsuario} onClick={onDelete}>
                 Eliminar
-              </Button>)}
-          </Tooltip>
+              </Button>
+            </Tooltip>
+          )}
 
           <Tooltip title="Actualizar lista">
             <Button icon={<ReloadOutlined />} onClick={fetchUsuarios}>
@@ -232,29 +207,13 @@ const Usuarios = () => {
         </Space>
       </TabPane>
 
-      <TabPane
-        tab={
-          <span>
-            <TeamOutlined />
-            Acciones
-          </span>
-        }
-        key="2"
-      >
+      <TabPane tab={<span><TeamOutlined />Acciones</span>} key="2">
         <Space>
           <Button icon={<SearchOutlined />}>Buscar</Button>
         </Space>
       </TabPane>
 
-      <TabPane
-        tab={
-          <span>
-            <SettingOutlined />
-            Configuración
-          </span>
-        }
-        key="3"
-      >
+      <TabPane tab={<span><SettingOutlined />Configuración</span>} key="3">
         <Space>
           <Button icon={<SettingOutlined />}>Opciones</Button>
         </Space>
@@ -292,27 +251,18 @@ const Usuarios = () => {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
-          onRow={(record) => ({
-            onClick: () => setSelectedUsuario(record),
-          })}
+          onRow={(record) => ({ onClick: () => setSelectedUsuario(record) })}
           rowClassName={(record) =>
-            selectedUsuario?.id === record.id
-              ? "ant-table-row-selected"
-              : ""
+            selectedUsuario?.id === record.id ? "ant-table-row-selected" : ""
           }
           style={{ background: "white", borderRadius: 4 }}
         />
       </div>
 
-      {/* MODAL */}
       <Modal
         title={editMode ? "Editar Usuario" : "Añadir Usuario"}
         open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          form.resetFields();
-          setSelectedUsuario(null);
-        }}
+        onCancel={() => { setModalVisible(false); form.resetFields(); setSelectedUsuario(null); }}
         onOk={() => form.submit()}
         destroyOnClose
       >
@@ -339,13 +289,9 @@ const Usuarios = () => {
           <Form.Item
             name="password"
             label={editMode ? "Nueva contraseña" : "Contraseña"}
-            rules={[
-              { required: !editMode, message: "Ingrese la contraseña" },
-            ]}
+            rules={[{ required: !editMode, message: "Ingrese la contraseña" }]}
           >
-            <Input.Password
-              placeholder={editMode ? "Dejar vacío para mantener la contraseña actual" : "Ingrese la contraseña"}
-            />
+            <Input.Password placeholder={editMode ? "Dejar vacío para mantener la contraseña" : "Ingrese la contraseña"} />
           </Form.Item>
 
           <Form.Item

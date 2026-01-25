@@ -3,7 +3,7 @@ import {
   Layout, Menu, Button, Typography, message, Modal
 } from "antd";
 import {
-  PlusOutlined, ReloadOutlined, SaveOutlined, UserAddOutlined, ShoppingCartOutlined, DollarOutlined, PauseCircleOutlined
+  PlusOutlined, ReloadOutlined, UserAddOutlined, ShoppingCartOutlined, DollarOutlined, PauseCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -37,6 +37,7 @@ const Ventas = () => {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [modalCliente, setModalCliente] = useState(false);
   const [clienteLoading, setClienteLoading] = useState(false);
+  const companyId = JSON.parse(localStorage.getItem('auth'))?.companyId || 1;
 
   const [metodosPago, setMetodosPago] = useState([]);
   const [modalSeleccionTienda, setModalSeleccionTienda] = useState(false);
@@ -70,6 +71,15 @@ const Ventas = () => {
     total
   } = useCarrito(productos, modo);
 
+  const isCreditoVencido = (cliente) => {
+    if (!cliente) return true;
+    const hoy = new Date();
+    const fechaBase = cliente.updatedAt ? new Date(cliente.updatedAt) : new Date();
+    const fechaLimite = new Date(fechaBase);
+    fechaLimite.setDate(fechaBase.getDate() + cliente.creditDays);
+    return hoy > fechaLimite;
+  };
+
   useEffect(() => {
     const fetchClientes = async () => {
       try {
@@ -89,7 +99,7 @@ const Ventas = () => {
     };
     fetchClientes();
     fetchMetodosPago();
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     if (!clienteSeleccionado) return;
@@ -101,12 +111,12 @@ const Ventas = () => {
       const creditAvailable = creditLimit - creditBalance;
 
       setCreditoCliente({
+        id: cliente.id,
         creditLimit,
         creditBalance,
         creditDays,
         creditAvailable,
         updatedAt: cliente.updatedAt,
-        creditType: cliente.creditType || "NORMAL",
       });
     }
   }, [clienteSeleccionado, clientes]);
@@ -179,7 +189,7 @@ const Ventas = () => {
       }
     };
     fetchTiendas();
-  }, [idVenta]);
+  }, [companyId, idVenta]);
 
   useEffect(() => {
     const fetchProductos = async () => {
@@ -192,7 +202,7 @@ const Ventas = () => {
       }
     };
     if (tiendaSeleccionada) fetchProductos();
-  }, [tiendaSeleccionada]);
+  }, [tiendaSeleccionada, companyId]);
 
   useEffect(() => {
     if (tiendaSeleccionada && mostradorSeleccionado && !esEdicion) {
@@ -207,43 +217,27 @@ const Ventas = () => {
     }
 
     if (clienteSeleccionado && carrito.length > 0) {
-      const cliente = clientes.find(c => c.id === clienteSeleccionado);
       const pagoCredito = pagosRecibidos.some(p => p.metodo.startsWith("CRED"));
 
       if (pagoCredito) {
-        const creditoDisponible = (Number(cliente.creditLimit) || 0) - (Number(cliente.creditBalance) || 0);
-
-        if (creditoDisponible < total) {
+        if (creditoCliente.creditAvailable < total) {
           message.error("El cliente no tiene suficiente crédito disponible para esta venta");
           setLoading(false);
           return;
         }
 
-      const hoy = new Date();
-      const fechaUltimaCompra = new Date(cliente.updatedAt);
-      let fechaLimite = new Date(fechaUltimaCompra);
-
-      if (cliente.creditType === "RESTABLECIDO") {
-        fechaLimite.setDate(hoy.getDate() + cliente.creditDays);
-      } else {
-        fechaLimite.setDate(fechaUltimaCompra.getDate() + cliente.creditDays);
-      }
-
-      if (hoy > fechaLimite) {
-        message.error(
-          `El crédito del cliente está vencido (${
-            cliente.creditType === "RESTABLECIDO" ? "restablecido" : "renovado"
-          }). Debe realizar pagos antes de continuar.`
-        );
-        setLoading(false);
-        return;
-      }
+        if (isCreditoVencido(creditoCliente)) {
+          message.error("El crédito del cliente está vencido. Debe realizar pagos antes de continuar.");
+          setLoading(false);
+          return;
+        }
       }
     }
 
     setLoading(true);
 
     const payload = {
+      companyId,
       clienteId: clienteSeleccionado,
       storeId: tiendaSeleccionada,
       cajaId: mostradorSeleccionado,
@@ -260,9 +254,22 @@ const Ventas = () => {
 
     try {
       if (esEdicion) {
+        const payload = {
+          companyId,
+          clienteId: clienteSeleccionado,
+          storeId: tiendaSeleccionada,
+          cajaId: mostradorSeleccionado,
+          productos: carrito.map(({ id, cantidad, priceBase, priceFinal }) => ({
+            productoId: id,
+            cantidad,
+            priceBase,
+            priceFinal
+          })),
+          formasPago: pagosRecibidos,
+          importeRecibido: pagosRecibidos.reduce((acc, p) => acc + (p.importe || 0), 0),
+          cambio: pagosRecibidos.reduce((acc, p) => acc + (p.importe || 0), 0) - total
+        };
         await apiClient.put(`/api/ventas/${idVenta}`, payload);
-        message.success("Venta actualizada correctamente");
-        navigate("/ventas/panel");
       } else {
         await apiClient.post("/api/ventas", payload);
         message.success("Venta registrada correctamente");
@@ -270,9 +277,7 @@ const Ventas = () => {
         setPagosRecibidos([]);
         setClienteSeleccionado(null);
         setModalPanelPago(false);
-        if (mostradorSeleccionado) {
-          fetchFolioEstimado(mostradorSeleccionado);
-        }
+        if (mostradorSeleccionado) fetchFolioEstimado(mostradorSeleccionado);
       }
     } catch (error) {
       console.error("Error al registrar venta:", error);
@@ -292,6 +297,7 @@ const Ventas = () => {
     setLoading(true);
 
     const payload = {
+      companyId,
       clienteId: clienteSeleccionado,
       storeId: tiendaSeleccionada,
       cajaId: mostradorSeleccionado,
@@ -318,9 +324,7 @@ const Ventas = () => {
         setPagosRecibidos([]);
         setClienteSeleccionado(null);
         setProductoSeleccionado(null);
-        if (mostradorSeleccionado) {
-          fetchFolioEstimado(mostradorSeleccionado);
-        }
+        if (mostradorSeleccionado) fetchFolioEstimado(mostradorSeleccionado);
       }
     } catch (err) {
       console.error("Error al guardar venta:", err);
@@ -431,7 +435,9 @@ const Ventas = () => {
         onCreate={async values => {
           setClienteLoading(true);
           try {
-              const res = await apiClient.post('/api/clientes', values);
+              const res = await apiClient.post('/api/clientes', {
+                ...values,
+                companyId});
               setClientes(prev => [...prev, res.data]);
               setClienteSeleccionado(res.data.id);
               setModalCliente(false);
@@ -473,22 +479,12 @@ const Ventas = () => {
             pagosRecibidos={pagosRecibidos}
             onAgregarPago={(metodoPagoSeleccionado) => {
               if (metodoPagoSeleccionado.descripcion.startsWith("CRED")) {
-                const hoy = new Date();
-                const fechaBase = new Date(creditoCliente.updatedAt);
-                const fechaLimite = new Date(fechaBase);
-
-                if (creditoCliente.creditType === "RESTABLECIDO") {
-                  fechaLimite.setDate(hoy.getDate() + creditoCliente.creditDays);
-                } else {
-                  fechaLimite.setDate(fechaBase.getDate() + creditoCliente.creditDays);
-                }
-
                 if (creditoCliente.creditAvailable < total) {
                   message.error("No hay crédito suficiente para usar este método");
                   return;
                 }
 
-                if (hoy > fechaLimite) {
+                if (isCreditoVencido(creditoCliente)) {
                   message.error("El crédito del cliente está vencido");
                   return;
                 }

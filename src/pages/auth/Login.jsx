@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Form, Input, Button, Typography, Card, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/axios';
 import { AuthContext } from '../../hooks/AuthProvider';
 
@@ -42,14 +42,18 @@ const Login = () => {
     try {
       const response = await apiClient.post('/api/auth/login', values);
 
-      const { token, username, roleId, roleName, permissions } = response.data;
+      const { token, user } = response.data;
 
       await handleLogin({
         token,
-        username,
-        roleId,
-        roleName,
-        permissions: permissions ?? [],
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions ?? [],
+          company: user.company,
+        },
       });
 
       navigate('/home');

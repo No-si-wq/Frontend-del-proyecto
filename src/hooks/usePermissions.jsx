@@ -14,9 +14,6 @@ import {
   FileTextOutlined,
   ShopOutlined,
   CreditCardOutlined,
-  DesktopOutlined,
-  ApartmentOutlined,
-  TagsOutlined,
   GlobalOutlined,
   FileOutlined,
   StockOutlined,
@@ -95,15 +92,20 @@ const rawModules = [
 
 export const usePermissions = () => {
   const { auth } = useContext(AuthContext);
-  const permissions = auth?.permissions || [];
+
+  const permissions = auth?.user?.permissions || [];
 
   const filteredModules = useMemo(() => {
     return rawModules
       .map((mod) => {
-        const submenu = mod.submenu?.filter((item) =>
-          permissions.includes(item.path)
-        ) || [];
-        return submenu.length > 0 ? { ...mod, submenu } : null;
+        const submenu =
+          mod.submenu?.filter((item) =>
+            permissions.includes(item.path)
+          ) || [];
+
+        return submenu.length > 0
+          ? { ...mod, submenu }
+          : null;
       })
       .filter(Boolean);
   }, [permissions]);

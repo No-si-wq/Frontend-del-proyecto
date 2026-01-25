@@ -31,7 +31,7 @@ export default function CurrencyPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [current, setCurrent] = useState(null);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?.user?.permissions?.includes("PERMISSION_DELETE_ROLE");
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
   const navigate = useNavigate();

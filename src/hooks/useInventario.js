@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { message } from "antd";
 import apiClient from "../api/axios";
 
@@ -12,6 +12,9 @@ export const useInventario = (storeId) => {
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState([]);
 
+  const cachedCategorias = useRef(null);
+  const cachedTaxes = useRef(null);
+
   const fetchProductos = async () => {
     if (!storeId) {
       setProductos([]);
@@ -21,7 +24,6 @@ export const useInventario = (storeId) => {
     setLoading(true);
     try {
       const { data } = await apiClient.get(`/api/inventario/by-store/${storeId}`);
-      console.log("Inventario API response:", data);
       setProductos(Array.isArray(data) ? data : []);
     } catch (err) {
       message.error("Error al cargar el inventario");
@@ -32,10 +34,16 @@ export const useInventario = (storeId) => {
   };
 
   const fetchCategorias = async () => {
+    if (cachedCategorias.current) {
+      setCategorias(cachedCategorias.current);
+      return;
+    }
+
     try {
       const { data } = await apiClient.get(`/api/categorias`);
-      const categorias = Array.isArray(data) ? data : extractData(data);
-      setCategorias(categorias);
+      const categoriasData = Array.isArray(data) ? data : extractData(data);
+      setCategorias(categoriasData);
+      cachedCategorias.current = categoriasData;
     } catch (err) {
       message.error("Error al cargar categorías");
       console.error("Categorías:", err);
@@ -44,16 +52,21 @@ export const useInventario = (storeId) => {
   };
 
   const fetchTaxes = async () => {
+    if (cachedTaxes.current) {
+      setTaxOptions(cachedTaxes.current);
+      return;
+    }
+
     try {
       const { data } = await apiClient.get(`/api/taxes`);
       const impuestos = Array.isArray(data.data) ? data.data : [];
-      setTaxOptions(
-        impuestos.map((t) => ({
-          value: t.id,
-          label: `${(t.percent * 100).toFixed(2)}%`,
-          percent: t.percent,
-        }))
-      );
+      const taxMapped = impuestos.map((t) => ({
+        value: t.id,
+        label: `${(t.percent * 100).toFixed(2)}%`,
+        percent: t.percent,
+      }));
+      setTaxOptions(taxMapped);
+      cachedTaxes.current = taxMapped;
     } catch (err) {
       message.error("Error al cargar impuestos");
       console.error("Impuestos:", err);
@@ -87,9 +100,6 @@ export const useInventario = (storeId) => {
   useEffect(() => {
     if (!storeId) {
       setProductos([]);
-      setCategorias([]);
-      setTaxOptions([]);
-      setTreeData([]);
       return;
     }
 

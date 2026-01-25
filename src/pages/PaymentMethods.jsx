@@ -34,7 +34,7 @@ export default function PaymentMethods() {
   const [form] = Form.useForm();
   const [page, setPage] = useState(1);
   const [currencies, setCurrencies] = useState([]);
-  const canDelete = auth.permissions.includes("PERMISSION_DELETE_ROLE");
+  const canDelete = auth?.user?.permissions?.includes("PERMISSION_DELETE_ROLE");
   const navigate = useNavigate();
 
   useEffect(() => {

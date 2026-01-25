@@ -19,7 +19,7 @@ import apiClient from '../api/axios';
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
-const Compras = () => {
+const Compras = ({ companyId }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const idCompra = searchParams.get("id");
@@ -64,7 +64,7 @@ const Compras = () => {
 
   const fetchCurrencies = async () => {
     try {
-      const res = await apiClient.get('/api/currencies');
+      const res = await apiClient.get('/api/currencies', { params: { companyId } });
       setMonedas(res.data.data);  
     } catch (error) {
       message.error("Error al cargar las monedas");
@@ -73,48 +73,81 @@ const Compras = () => {
   };
 
   const fetchUltimoFolio = async (cajaId) => {
+    if (!companyId) return;
     try {
-      const { data } = await apiClient.get(`/api/compras/last-folio/${cajaId}`);
+      const { data } = await apiClient.get(`/api/compras/last-folio/${cajaId}`, { params: { companyId } });
       setFolioEstimado(Number(data.folio) + 1);
     } catch {
       setFolioEstimado(1);
     }
   };
 
+  const fetchProveedores = async () => {
+    if (!companyId) return;
+    try {
+      const res = await apiClient.get('/api/proveedores', { params: { companyId } });
+      setProveedores(res.data);
+    } catch {
+      message.error("No se pudieron cargar los proveedores");
+    }
+  };
+
+  const fetchMetodosPago = async () => {
+    if (!companyId) return;
+    try {
+      const res = await apiClient.get('/api/payment-methods', { params: { companyId } });
+      setMetodosPago(res.data.data);
+    } catch {
+      message.error("No se pudieron cargar los métodos de pago");
+    }
+  };
+
+  const fetchProductos = async (storeId) => {
+    if (!companyId || !storeId) return;
+    try {
+      const { data } = await apiClient.get(`/api/inventario/by-store/${storeId}`, { params: { companyId } });
+      setProductos(data);
+    } catch {
+      message.error("No se pudieron cargar los productos");
+    }
+  };
+
+  const fetchTiendas = async () => {
+    if (!companyId) return;
+    try {
+      const { data } = await apiClient.get('/api/stores', { params: { companyId } });
+      setTiendasDisponibles(data);
+      if (!esEdicion) setModalSeleccionTienda(true);
+    } catch {
+      message.error("No se pudieron cargar las tiendas");
+    }
+  };
+
+  useEffect(() => {
+    fetchProveedores();
+    fetchMetodosPago();
+    fetchTiendas();
+  }, [companyId]);
+
   useEffect(() => {
     if (mostradorSeleccionado) fetchUltimoFolio(mostradorSeleccionado);
   }, [mostradorSeleccionado]);
+
+  useEffect(() => {
+    if (!tiendaSeleccionada) return;
+    fetchProductos(tiendaSeleccionada);
+  }, [tiendaSeleccionada]);
 
   useEffect(() => {
     if (modalRecibido) fetchCurrencies();
   }, [modalRecibido]);
 
   useEffect(() => {
-    const fetchProveedores = async () => {
-      try {
-        const res = await apiClient.get('/api/proveedores');
-        setProveedores(res.data);
-      } catch {
-        message.error("No se pudieron cargar los proveedores");
-      }
-    };
-    const fetchMetodosPago = async () => {
-      try {
-        const res = await apiClient.get('/api/payment-methods');
-        setMetodosPago(res.data.data);
-      } catch {
-        message.error("No se pudieron cargar los métodos de pago");
-      }
-    };
-    fetchProveedores();
-    fetchMetodosPago();
-  }, []);
+    if (!esEdicion || !companyId) return;
 
-  useEffect(() => {
-    if (esEdicion) {
-      apiClient.get(`/api/compras/${idCompra}`)
+    apiClient.get(`/api/compras/${idCompra}`, { params: { companyId } })
       .then(({ data }) => {
-        setFolioReal(data.folio || ""); 
+        setFolioReal(data.folio || "");
         setProveedorSeleccionado(data.supplierId ?? null);
         setTiendaSeleccionada(data.storeId ?? null);
         setMostradorSeleccionado(data.cajaId ?? null);
@@ -131,42 +164,15 @@ const Compras = () => {
           totalFinal: p.costFinal * p.cantidad
         }));
 
-        setCarrito(productosCompra); 
+        setCarrito(productosCompra);
         message.success("Compra cargada para edición");
       })
       .catch(err => {
         console.error(err);
         message.error("No se pudo cargar la compra");
       });
-    }
-  }, [esEdicion, idCompra]);
-
-  useEffect(() => {
-    if (!tiendaSeleccionada) return;
-    const fetchProductos = async () => {
-      try {
-        const { data } = await apiClient.get(`/api/inventario/by-store/${tiendaSeleccionada}`);
-        setProductos(data);
-      } catch {
-        message.error("No se pudieron cargar los productos");
-      }
-    };
-    fetchProductos();
-  }, [tiendaSeleccionada]);
-
-  useEffect(() => {
-    const fetchTiendas = async () => {
-      try {
-        const { data } = await apiClient.get('/api/stores');
-        setTiendasDisponibles(data);
-        if (!esEdicion) setModalSeleccionTienda(true);
-      } catch {
-        message.error("No se pudieron cargar las tiendas");
-      }
-    };
-    fetchTiendas();
-  }, [esEdicion]);
-
+  }, [esEdicion, idCompra, companyId]);
+  
   const handleRegistrar = async () => {
     if (!proveedorSeleccionado || carrito.length === 0 || !mostradorSeleccionado) {
       message.warning("Completa todos los campos obligatorios");
@@ -175,6 +181,7 @@ const Compras = () => {
 
     setLoading(true);
     const payload = {
+      companyId,
       supplierId: proveedorSeleccionado,
       storeId: tiendaSeleccionada,
       cajaId: mostradorSeleccionado,
@@ -192,8 +199,7 @@ const Compras = () => {
         await apiClient.put(`/api/compras/${idCompra}`, payload);
         message.success("Compra actualizada correctamente");
         navigate('/compras/facturas');
-      }
-      else{
+      } else {
         await apiClient.post("/api/compras", payload);
         message.success(`Compra registrada con éxito`);
         setCarrito([]);
@@ -212,7 +218,6 @@ const Compras = () => {
     }
   };
 
-
   const handleGuardarPendiente = async () => {
     if (!proveedorSeleccionado || carrito.length === 0) {
       message.warning('Completa todos los campos obligatorios');
@@ -221,6 +226,7 @@ const Compras = () => {
 
     setLoading(true);
     const payload = {
+      companyId,
       supplierId: proveedorSeleccionado,
       storeId: tiendaSeleccionada,
       cajaId: mostradorSeleccionado,
@@ -254,7 +260,7 @@ const Compras = () => {
       setLoading(false);
     }
   };
-
+  
   const ribbon = (
     <Menu mode="horizontal" style={{ marginBottom: 8 }}>
       <Menu.Item key="nueva" icon={<PlusOutlined />} onClick={() => { 
@@ -287,12 +293,12 @@ const Compras = () => {
       <Header style={{ background: "#f4f6fa", padding: "0 16px", boxShadow: "0 1px 4px #eee" }}>{ribbon}</Header>
       <Content style={{ padding: 16, background: "#eaf0fb" }}>
         <div style={{ maxWidth: 1200, margin: "auto", background: "#fff", borderRadius: 8, padding: 24, boxShadow: "0 2px 8px #d5deef" }}>
-        <Title level={4}>
-          {modoVista ? "Vista de compra" : "Registro de compra"}
-        </Title>
-        <Text type="secondary" style={{ fontSize: 18, fontWeight: "bold" }}>
-          FOLIO: {String(esEdicion ? folioReal : folioEstimado).padStart(5, "0")}
-        </Text>
+          <Title level={4}>
+            {modoVista ? "Vista de compra" : "Registro de compra"}
+          </Title>
+          <Text type="secondary" style={{ fontSize: 18, fontWeight: "bold" }}>
+            FOLIO: {String(esEdicion ? folioReal : folioEstimado).padStart(5, "0")}
+          </Text>
           {!compraHabilitada && (
             <div style={{ background: "#fff3cd", padding: 16, margin: "16px 0", border: "1px solid #ffeeba", borderRadius: 6 }}>
               <Text strong>Debes seleccionar una tienda y un mostrador para comenzar.</Text>
@@ -365,7 +371,7 @@ const Compras = () => {
         onCreate={async values => {
           setProveedorLoading(true);
           try {
-            const { data: nuevo } = await apiClient.post('/api/proveedores', values);
+            const { data: nuevo } = await apiClient.post('/api/proveedores', values, { params: { companyId } });
             setProveedores(prev => [...prev, nuevo]);
             setProveedorSeleccionado(nuevo.id);
             setModalProveedor(false);
